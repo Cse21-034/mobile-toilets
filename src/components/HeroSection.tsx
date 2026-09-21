@@ -31,12 +31,7 @@ const HeroSection = () => {
 
       <div className="container relative grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-cta" aria-hidden="true" />
-            Mobile toilet hire &amp; sanitation services
-          </span>
-
-          <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
+          <h1 className="text-4xl font-extrabold leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
             Clean, reliable mobile toilets for <span className="text-cta">every event and site</span>
           </h1>
 

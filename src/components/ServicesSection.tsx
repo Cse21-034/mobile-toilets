@@ -1,4 +1,3 @@
-import { CalendarClock, Leaf, PartyPopper, Sparkles, Truck, Wrench } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
 import serviceDelivery from "@/assets/service-delivery.jpg";
@@ -11,37 +10,31 @@ import serviceEco from "@/assets/service-eco.jpg";
 const services = [
   {
     image: serviceDelivery,
-    icon: Truck,
     title: "Fast Delivery",
     description: "Quick and efficient delivery to your location anywhere in the region.",
   },
   {
     image: serviceHygiene,
-    icon: Sparkles,
     title: "Hygienic & Clean",
     description: "All units are thoroughly sanitized and maintained to the highest standards.",
   },
   {
     image: serviceFlexible,
-    icon: CalendarClock,
     title: "Flexible Rentals",
     description: "Daily, weekly, or monthly rental options to suit your project timeline.",
   },
   {
     image: serviceMaintenance,
-    icon: Wrench,
     title: "Regular Servicing",
     description: "Scheduled maintenance and cleaning throughout your rental period.",
   },
   {
     image: serviceEvents,
-    icon: PartyPopper,
     title: "Event Specialists",
     description: "Experienced in handling large events, festivals, and construction sites.",
   },
   {
     image: serviceEco,
-    icon: Leaf,
     title: "Eco-Friendly",
     description: "Environmentally responsible waste management and disposal practices.",
   },
@@ -58,26 +51,21 @@ const ServicesSection = () => {
         />
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-          {services.map(({ image, icon: Icon, title, description }, index) => (
+          {services.map(({ image, title, description }, index) => (
             <Reveal key={title} delay={(index % 3) * 80} className="h-full">
               <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-elevated">
-                <div className="relative">
-                  <div className="aspect-[16/10] overflow-hidden">
-                    <img
-                      src={image}
-                      alt=""
-                      width={512}
-                      height={512}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="absolute -bottom-6 left-6 grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-card ring-4 ring-card transition-colors duration-300 group-hover:bg-secondary">
-                    <Icon className="h-6 w-6" aria-hidden="true" />
-                  </span>
+                <div className="aspect-[16/10] overflow-hidden">
+                  <img
+                    src={image}
+                    alt=""
+                    width={512}
+                    height={512}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                 </div>
-                <div className="flex flex-1 flex-col px-6 pb-7 pt-10">
+                <div className="flex flex-1 flex-col p-6">
                   <h3 className="text-xl font-bold text-foreground">{title}</h3>
                   <p className="mt-2 text-muted-foreground">{description}</p>
                 </div>
