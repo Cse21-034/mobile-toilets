@@ -1,74 +1,93 @@
-import { useState, useEffect } from "react";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import rotate1 from "@/assets/rotate1.jpg";
-import rotate2 from "@/assets/rotate2.jpg";
-import rotate3 from "@/assets/rotate3.jpg";
+import { ArrowRight, BadgeCheck, Clock, Phone, Sparkles } from "lucide-react";
+import fleetTrailer from "@/assets/fleet-trailer.jpg";
+import { site } from "@/lib/site";
+
+const highlights = [
+  { icon: Sparkles, text: "Clean, well-maintained facilities for all occasions" },
+  { icon: Clock, text: "24/7 availability and rapid on-site delivery" },
+  { icon: BadgeCheck, text: "Affordable pricing with professional service" },
+];
 
 const HeroSection = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [rotate1, rotate2, rotate3];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Change image every 5 seconds
-    return () => clearInterval(interval);
-  }, [slides.length]);
-
-  const scrollToContact = () => {
-    const element = document.getElementById("contact");
-    element?.scrollIntoView({ behavior: "smooth" });
-  };
+  const phone = site.phones[0];
 
   return (
     <section
       id="home"
-      className="relative mt-24 md:mt-28 py-12 md:py-16"
+      className="hero-gradient on-dark relative overflow-hidden pb-20 pt-28 text-white lg:pb-28 lg:pt-36"
     >
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-          {/* Left Side - Content */}
-          <div className="flex flex-col justify-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
-              Professional Mobile Toilet Solutions
-            </h1>
-            <p className="text-lg text-muted-foreground mb-6">
-              Elevate your event experience with our premium, hygienic, and reliable portable sanitation services. From intimate gatherings to large-scale events, construction sites to festivals – we've got you covered.
-            </p>
-            
-            <div className="space-y-3 mb-8">
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold text-xl">✓</span>
-                <p className="text-foreground">Clean, well-maintained facilities for all occasions</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold text-xl">✓</span>
-                <p className="text-foreground">24/7 availability and rapid on-site delivery</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold text-xl">✓</span>
-                <p className="text-foreground">Affordable pricing with professional service</p>
-              </div>
-            </div>
+      {/* Decorative background: soft glows and a faint dot grid */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="absolute -right-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-cta/15 blur-3xl" />
+        <div className="absolute -bottom-40 -left-24 h-[26rem] w-[26rem] rounded-full bg-secondary/30 blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+      </div>
 
-            <Button
-              onClick={scrollToContact}
-              className="w-fit text-lg px-8 py-6 flex items-center gap-2"
-            >
+      <div className="container relative grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+        <div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-cta" aria-hidden="true" />
+            Mobile toilet hire &amp; sanitation services
+          </span>
+
+          <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
+            Clean, reliable mobile toilets for <span className="text-cta">every event and site</span>
+          </h1>
+
+          <p className="mt-6 max-w-xl text-lg text-white/80">
+            Elevate your event experience with premium, hygienic and reliable portable sanitation — from intimate
+            gatherings to large-scale events, construction sites and festivals. We&rsquo;ve got you covered.
+          </p>
+
+          <ul className="mt-8 space-y-3.5">
+            {highlights.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3.5">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10 text-cta ring-1 ring-white/15">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="text-white/90">{text}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <a href="#contact" className="btn-cta px-8 py-4 text-base">
               Request a Quote
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+              <ArrowRight className="h-5 w-5" aria-hidden="true" />
+            </a>
+            <a href={`tel:${phone.tel}`} className="btn-outline-light px-8 py-4 text-base">
+              <Phone className="h-5 w-5" aria-hidden="true" />
+              Call {phone.display}
+            </a>
           </div>
+        </div>
 
-          {/* Right Side - Slideshow */}
-          <div className="flex justify-center md:justify-end">
-            <div className="bg-black rounded-lg overflow-hidden max-w-sm w-full">
-              <img
-                src={slides[currentSlide]}
-                alt="Slideshow"
-                className="w-full object-contain transition-all duration-1000"
-              />
+        {/* Real photo of the fleet with two supporting facts taken from the site copy */}
+        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+          <div aria-hidden="true" className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-cta/40 to-transparent blur-2xl" />
+          <img
+            src={fleetTrailer}
+            width={1400}
+            height={933}
+            alt="White and silver Solidcare VIP toilet trailer with separate ladies and gents doors and access steps"
+            className="relative aspect-[3/2] w-full rounded-3xl object-cover shadow-elevated ring-1 ring-white/20"
+          />
+          <div className="absolute -top-4 right-4 rounded-full bg-cta px-4 py-2 text-sm font-bold text-cta-foreground shadow-card">
+            Daily · Weekly · Monthly rentals
+          </div>
+          <div className="absolute -bottom-6 left-4 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 text-card-foreground shadow-elevated sm:left-6">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Clock className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-sm font-bold leading-tight">Quote within 24 hours</p>
+              <p className="text-xs text-muted-foreground">Tell us your date and location</p>
             </div>
           </div>
         </div>

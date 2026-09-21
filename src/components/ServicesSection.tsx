@@ -1,3 +1,6 @@
+import { CalendarClock, Leaf, PartyPopper, Sparkles, Truck, Wrench } from "lucide-react";
+import Reveal from "@/components/Reveal";
+import SectionHeader from "@/components/SectionHeader";
 import serviceDelivery from "@/assets/service-delivery.jpg";
 import serviceHygiene from "@/assets/service-hygiene.jpg";
 import serviceFlexible from "@/assets/service-flexible.jpg";
@@ -8,31 +11,37 @@ import serviceEco from "@/assets/service-eco.jpg";
 const services = [
   {
     image: serviceDelivery,
+    icon: Truck,
     title: "Fast Delivery",
     description: "Quick and efficient delivery to your location anywhere in the region.",
   },
   {
     image: serviceHygiene,
+    icon: Sparkles,
     title: "Hygienic & Clean",
     description: "All units are thoroughly sanitized and maintained to the highest standards.",
   },
   {
     image: serviceFlexible,
+    icon: CalendarClock,
     title: "Flexible Rentals",
     description: "Daily, weekly, or monthly rental options to suit your project timeline.",
   },
   {
     image: serviceMaintenance,
+    icon: Wrench,
     title: "Regular Servicing",
     description: "Scheduled maintenance and cleaning throughout your rental period.",
   },
   {
     image: serviceEvents,
+    icon: PartyPopper,
     title: "Event Specialists",
     description: "Experienced in handling large events, festivals, and construction sites.",
   },
   {
     image: serviceEco,
+    icon: Leaf,
     title: "Eco-Friendly",
     description: "Environmentally responsible waste management and disposal practices.",
   },
@@ -41,44 +50,39 @@ const services = [
 const ServicesSection = () => {
   return (
     <section id="services" className="section-padding bg-background">
-      <div className="container mx-auto">
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-secondary font-semibold uppercase tracking-wider text-sm">
-            What We Offer
-          </span>
-          <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4">
-            Our Professional Services
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            We provide comprehensive portable sanitation solutions with a commitment 
-            to quality, reliability, and customer satisfaction.
-          </p>
-        </div>
+      <div className="container">
+        <SectionHeader
+          eyebrow="What We Offer"
+          title="Our Professional Services"
+          description="We provide comprehensive portable sanitation solutions with a commitment to quality, reliability, and customer satisfaction."
+        />
 
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <div
-              key={service.title}
-              className="card-service group overflow-hidden"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              {/* Image */}
-              <div className="w-full h-48 rounded-lg overflow-hidden mb-5">
-                <img
-                  src={service.image}
-                  alt={service.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-              </div>
-              <h3 className="font-heading text-xl font-semibold text-foreground mb-3">
-                {service.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {service.description}
-              </p>
-            </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+          {services.map(({ image, icon: Icon, title, description }, index) => (
+            <Reveal key={title} delay={(index % 3) * 80} className="h-full">
+              <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-elevated">
+                <div className="relative">
+                  <div className="aspect-[16/10] overflow-hidden">
+                    <img
+                      src={image}
+                      alt=""
+                      width={512}
+                      height={512}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <span className="absolute -bottom-6 left-6 grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-card ring-4 ring-card transition-colors duration-300 group-hover:bg-secondary">
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col px-6 pb-7 pt-10">
+                  <h3 className="text-xl font-bold text-foreground">{title}</h3>
+                  <p className="mt-2 text-muted-foreground">{description}</p>
+                </div>
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>

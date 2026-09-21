@@ -1,121 +1,118 @@
-import { Check } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Reveal from "@/components/Reveal";
+import SectionHeader from "@/components/SectionHeader";
+import { type ToiletType } from "@/lib/site";
 import toiletStandard from "@/assets/toilet-standard.jpg";
 import toiletVip from "@/assets/toilet-vip.jpg";
 import toiletAccessible from "@/assets/toilet-accessible.jpg";
 
-const products = [
+const products: {
+  type: ToiletType;
+  name: string;
+  image: string;
+  description: string;
+  features: string[];
+  ideal: string;
+  badge?: string;
+}[] = [
   {
+    type: "standard",
     name: "Standard Portable Toilet",
     image: toiletStandard,
     description: "Our most popular option for construction sites and outdoor events.",
-    features: [
-      "Durable construction",
-      "Non-slip flooring",
-      "Ventilation system",
-      "Hand sanitizer dispenser",
-    ],
+    features: ["Durable construction", "Non-slip flooring", "Ventilation system", "Hand sanitizer dispenser"],
     ideal: "Construction sites, small events",
+    badge: "Most popular",
   },
   {
+    type: "vip",
     name: "VIP Luxury Toilet Trailer",
     image: toiletVip,
     description: "Premium mobile restroom with upscale amenities for special occasions.",
-    features: [
-      "Flushing toilet",
-      "Running water sink",
-      "Mirror & lighting",
-      "Climate control available",
-    ],
+    features: ["Flushing toilet", "Running water sink", "Mirror & lighting", "Climate control available"],
     ideal: "Weddings, corporate events, VIP areas",
   },
   {
+    type: "accessible",
     name: "Accessible Toilet Unit",
     image: toiletAccessible,
     description: "Spacious wheelchair-accessible unit meeting disability access requirements.",
-    features: [
-      "Wide doorway access",
-      "Interior grab rails",
-      "Lowered fixtures",
-      "Extra interior space",
-    ],
+    features: ["Wide doorway access", "Interior grab rails", "Lowered fixtures", "Extra interior space"],
     ideal: "Public events, inclusive facilities",
   },
 ];
 
-const ProductsSection = () => {
-  const scrollToContact = () => {
-    const element = document.getElementById("contact");
-    element?.scrollIntoView({ behavior: "smooth" });
-  };
+type ProductsSectionProps = {
+  /** Called when a visitor picks a unit, so the quote form can pre-select it */
+  onRequestQuote: (type: ToiletType) => void;
+};
 
+const ProductsSection = ({ onRequestQuote }: ProductsSectionProps) => {
   return (
     <section id="products" className="section-padding bg-muted">
-      <div className="container mx-auto">
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-secondary font-semibold uppercase tracking-wider text-sm">
-            Our Fleet
-          </span>
-          <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4">
-            Mobile Toilet Options
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Choose from our range of high-quality portable toilets to meet your specific needs 
-            and budget requirements.
-          </p>
-        </div>
+      <div className="container">
+        <SectionHeader
+          eyebrow="Our Fleet"
+          title="Mobile Toilet Options"
+          description="Choose from our range of high-quality portable toilets to meet your specific needs and budget requirements."
+        />
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
           {products.map((product, index) => (
-            <div
-              key={product.name}
-              className="bg-card rounded-2xl overflow-hidden group"
-              style={{ boxShadow: "var(--shadow-card)" }}
-            >
-              {/* Image */}
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                  Available
+            <Reveal key={product.type} delay={index * 90} className="h-full">
+              <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-elevated">
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    width={1024}
+                    height={768}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {product.badge && (
+                    <span className="absolute left-4 top-4 rounded-full bg-cta px-3 py-1 text-sm font-bold text-cta-foreground shadow-soft">
+                      {product.badge}
+                    </span>
+                  )}
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="p-6">
-                <h3 className="font-heading text-xl font-bold text-foreground mb-2">
-                  {product.name}
-                </h3>
-                <p className="text-muted-foreground mb-4">{product.description}</p>
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="text-xl font-bold text-foreground">{product.name}</h3>
+                  <p className="mt-2 text-muted-foreground">{product.description}</p>
 
-                {/* Features */}
-                <ul className="space-y-2 mb-4">
-                  {product.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-secondary" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                  <ul className="mt-5 space-y-2.5">
+                    {product.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-3 text-sm text-foreground">
+                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-secondary/15 text-secondary">
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
+                        </span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
 
-                {/* Ideal For */}
-                <p className="text-sm text-muted-foreground mb-5">
-                  <strong className="text-foreground">Ideal for:</strong> {product.ideal}
-                </p>
+                  {/* mt-auto pins this block to the card bottom so the buttons line up across cards */}
+                  <div className="mt-auto pt-6">
+                    <p className="flex items-start gap-2.5 rounded-xl bg-muted px-4 py-3 text-sm">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                      <span>
+                        <span className="font-semibold text-foreground">Ideal for: </span>
+                        <span className="text-muted-foreground">{product.ideal}</span>
+                      </span>
+                    </p>
 
-                <Button
-                  onClick={scrollToContact}
-                  className="w-full hero-gradient text-primary-foreground hover:opacity-90 transition-opacity"
-                >
-                  Request Quote
-                </Button>
-              </div>
-            </div>
+                    <Button asChild size="lg" className="mt-4 h-12 w-full rounded-xl text-base font-semibold">
+                      <a href="#contact" onClick={() => onRequestQuote(product.type)}>
+                        Request this unit
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>

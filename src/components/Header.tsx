@@ -1,124 +1,141 @@
-import { useState } from "react";
-import { Menu, X, Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { Menu, Phone, X } from "lucide-react";
+import Logo from "@/components/Logo";
+import { useActiveSection } from "@/hooks/use-active-section";
+import { site } from "@/lib/site";
+import { cn } from "@/lib/utils";
+
+const links = [
+  { id: "services", label: "Services" },
+  { id: "products", label: "Our Toilets" },
+  { id: "how-it-works", label: "How It Works" },
+  { id: "gallery", label: "Gallery" },
+  { id: "contact", label: "Contact" },
+];
+
+const sectionIds = ["home", ...links.map((link) => link.id)];
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const active = useActiveSection(sectionIds);
+  const phone = site.phones[0];
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: "smooth" });
-    setIsMenuOpen(false);
-  };
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Escape closes the mobile menu; it also closes if the window grows to the desktop layout
+  useEffect(() => {
+    if (!menuOpen) return;
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    const onResize = () => {
+      if (desktop.matches) setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    desktop.addEventListener("change", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      desktop.removeEventListener("change", onResize);
+    };
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-24 md:h-28">
-          {/* Logo - Copied from reference */}
-          <div className="flex items-center">
-            <img 
-              src="/logo.png" 
-              alt="Solidcare Training Services Logo" 
-              className="h-32 w-40 md:h-40 md:w-48 object-contain cursor-pointer"
-              onClick={() => scrollToSection("home")}
-            />
-          </div>
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300",
+        "bg-background/95",
+        scrolled || menuOpen ? "border-border shadow-soft" : "border-transparent",
+      )}
+    >
+      <div className="container flex h-16 items-center justify-between gap-4 lg:h-[4.5rem]">
+        <a href="#home" className="focus-ring rounded-lg" aria-label="Solidcare Mobile Toilets, back to top">
+          <Logo />
+        </a>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button
-              onClick={() => scrollToSection("home")}
-              className="text-foreground hover:text-primary transition-colors font-medium"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => scrollToSection("services")}
-              className="text-foreground hover:text-primary transition-colors font-medium"
-            >
-              Services
-            </button>
-            <button
-              onClick={() => scrollToSection("products")}
-              className="text-foreground hover:text-primary transition-colors font-medium"
-            >
-              Our Toilets
-            </button>
-            <button
-              onClick={() => scrollToSection("contact")}
-              className="text-foreground hover:text-primary transition-colors font-medium"
-            >
-              Contact
-            </button>
-          </nav>
+        {/* Desktop navigation */}
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          {links.map((link) => {
+            const isActive = active === link.id;
+            return (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                aria-current={isActive ? "location" : undefined}
+                className={cn(
+                  "focus-ring relative rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:text-primary",
+                  isActive ? "text-primary" : "text-foreground/75",
+                )}
+              >
+                {link.label}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-x-3 bottom-0 h-0.5 origin-left rounded-full bg-cta transition-transform duration-300",
+                    isActive ? "scale-x-100" : "scale-x-0",
+                  )}
+                />
+              </a>
+            );
+          })}
+        </nav>
 
-          {/* CTA Button */}
-          <div className="hidden md:flex items-center gap-4">
-            <a href="tel:+27000000000" className="flex items-center gap-2 text-primary font-medium">
-              <Phone className="w-4 h-4" />
-              <span>Call Us</span>
-            </a>
-            <Button
-              onClick={() => scrollToSection("contact")}
-              className="btn-hero text-sm px-6 py-2"
-            >
-              Get Quote
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
+        <div className="hidden items-center gap-3 lg:flex">
+          <a
+            href={`tel:${phone.tel}`}
+            className="focus-ring flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-primary transition-colors hover:text-primary/75"
           >
-            {isMenuOpen ? (
-              <X className="w-6 h-6 text-foreground" />
-            ) : (
-              <Menu className="w-6 h-6 text-foreground" />
-            )}
-          </button>
+            <Phone className="h-4 w-4" aria-hidden="true" />
+            {phone.display}
+          </a>
+          <a href="#contact" className="btn-cta !min-h-10 px-5 py-2 text-sm">
+            Get a Quote
+          </a>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <nav className="md:hidden py-4 border-t border-border animate-fade-in">
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={() => scrollToSection("home")}
-                className="text-foreground hover:text-primary transition-colors font-medium text-left py-2"
-              >
-                Home
-              </button>
-              <button
-                onClick={() => scrollToSection("services")}
-                className="text-foreground hover:text-primary transition-colors font-medium text-left py-2"
-              >
-                Services
-              </button>
-              <button
-                onClick={() => scrollToSection("products")}
-                className="text-foreground hover:text-primary transition-colors font-medium text-left py-2"
-              >
-                Our Toilets
-              </button>
-              <button
-                onClick={() => scrollToSection("contact")}
-                className="text-foreground hover:text-primary transition-colors font-medium text-left py-2"
-              >
-                Contact
-              </button>
-              <Button
-                onClick={() => scrollToSection("contact")}
-                className="btn-hero w-full mt-2"
-              >
-                Get Quote
-              </Button>
-            </div>
-          </nav>
-        )}
+        {/* Mobile menu button */}
+        <button
+          type="button"
+          className="focus-ring -mr-2 grid h-11 w-11 place-items-center rounded-lg text-foreground lg:hidden"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          {menuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+        </button>
       </div>
+
+      {/* Mobile navigation */}
+      <nav id="mobile-menu" aria-label="Mobile" hidden={!menuOpen} className="border-t border-border bg-background lg:hidden">
+        <div className="container flex flex-col py-3">
+          {links.map((link) => (
+            <a
+              key={link.id}
+              href={`#${link.id}`}
+              onClick={closeMenu}
+              aria-current={active === link.id ? "location" : undefined}
+              className={cn(
+                "focus-ring flex min-h-12 items-center rounded-lg px-3 text-base font-semibold transition-colors hover:bg-accent",
+                active === link.id ? "bg-accent text-primary" : "text-foreground",
+              )}
+            >
+              {link.label}
+            </a>
+          ))}
+          <a href="#contact" onClick={closeMenu} className="btn-cta mt-3">
+            Get a Quote
+          </a>
+        </div>
+      </nav>
     </header>
   );
 };

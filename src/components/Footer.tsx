@@ -1,90 +1,105 @@
-import { Phone, Mail, MapPin } from "lucide-react";
+import { ArrowUp, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import Logo from "@/components/Logo";
+import { site, whatsappLink } from "@/lib/site";
+
+const quickLinks = [
+  { href: "#home", label: "Home" },
+  { href: "#services", label: "Services" },
+  { href: "#products", label: "Our Toilets" },
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "#gallery", label: "Gallery" },
+  { href: "#contact", label: "Contact" },
+];
+
+const serviceList = [
+  "Event Toilet Hire",
+  "Construction Site Units",
+  "VIP Toilet Trailers",
+  "Accessible Toilets",
+  "Regular Servicing",
+];
+
+const linkClass =
+  "focus-ring rounded text-sm text-white/70 transition-colors hover:text-white";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
-    <footer className="bg-foreground text-primary-foreground">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-4 gap-8">
-          {/* Company Info - Logo added here */}
-          <div className="md:col-span-1">
-            <div className="flex items-center mb-4">
-              <img 
-                src="/logo.png" 
-                alt="Solidcare Training Services Logo" 
-                className="h-24 w-32 object-contain brightness-0 invert" 
-              />
-            </div>
-            <p className="text-primary-foreground/70 text-sm">
-              Professional portable sanitation solutions for events, construction sites, 
-              and outdoor venues. Quality you can trust.
+    <footer className="on-dark bg-[hsl(190_45%_7%)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-white lg:pb-0">
+      <div className="container py-14 lg:py-16">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
+          <div>
+            <a href="#home" className="focus-ring inline-block rounded-lg" aria-label="Solidcare Mobile Toilets, back to top">
+              <Logo variant="light" />
+            </a>
+            <p className="mt-5 max-w-xs text-sm text-white/70">
+              Professional portable sanitation solutions for events, construction sites, and outdoor venues. Quality
+              you can trust.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-heading font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              {["Home", "Services", "Products", "Contact"].map((link) => (
-                <li key={link}>
-                  <button
-                    onClick={() => scrollToSection(link.toLowerCase() === "products" ? "products" : link.toLowerCase())}
-                    className="text-primary-foreground/70 hover:text-primary-foreground transition-colors text-sm"
-                  >
-                    {link === "Products" ? "Our Toilets" : link}
-                  </button>
+          <nav aria-label="Footer">
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Quick Links</h2>
+            <ul className="mt-5 space-y-3">
+              {quickLinks.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href} className={linkClass}>
+                    {link.label}
+                  </a>
                 </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Our Services</h2>
+            <ul className="mt-5 space-y-3 text-sm text-white/70">
+              {serviceList.map((service) => (
+                <li key={service}>{service}</li>
               ))}
             </ul>
           </div>
 
-          {/* Services */}
           <div>
-            <h4 className="font-heading font-semibold mb-4">Our Services</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li>Event Toilet Hire</li>
-              <li>Construction Site Units</li>
-              <li>VIP Toilet Trailers</li>
-              <li>Accessible Toilets</li>
-              <li>Regular Servicing</li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="font-heading font-semibold mb-4">Contact Us</h4>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-sm text-primary-foreground/70">
-                <Phone className="w-4 h-4" />
-                <a href="tel:+27000000000" className="hover:text-primary-foreground transition-colors">
-                  +27 00 000 0000
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Contact Us</h2>
+            <ul className="mt-5 space-y-3.5">
+              {site.phones.map((phone) => (
+                <li key={phone.tel} className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
+                  <a href={`tel:${phone.tel}`} className={linkClass}>
+                    {phone.display}
+                  </a>
+                </li>
+              ))}
+              <li className="flex items-center gap-3">
+                <MessageCircle className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
+                <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                  Chat on WhatsApp
                 </a>
               </li>
-              <li className="flex items-center gap-3 text-sm text-primary-foreground/70">
-                <Mail className="w-4 h-4" />
-                <a href="mailto:technical@solidcareservices.com" className="hover:text-primary-foreground transition-colors break-all">
-                  technical@solidcareservices.com
+              <li className="flex items-center gap-3">
+                <Mail className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
+                <a href={`mailto:${site.email}`} className={`${linkClass} break-all`}>
+                  {site.email}
                 </a>
               </li>
-              <li className="flex items-start gap-3 text-sm text-primary-foreground/70">
-                <MapPin className="w-4 h-4 mt-0.5" />
-                <span>Serving all areas nationwide</span>
+              <li className="flex items-start gap-3 text-sm text-white/70">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
+                <span>{site.coverage}</span>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-primary-foreground/20 mt-10 pt-6 text-center">
-          <p className="text-sm text-primary-foreground/60">
-            © {currentYear} SolidCare Mobile Toilets. All rights reserved.
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/15 pt-6 sm:flex-row">
+          <p className="text-sm text-white/60">
+            © {currentYear} {site.name}. All rights reserved.
           </p>
+          <a href="#home" className="focus-ring flex items-center gap-2 rounded text-sm text-white/70 transition-colors hover:text-white">
+            Back to top
+            <ArrowUp className="h-4 w-4" aria-hidden="true" />
+          </a>
         </div>
       </div>
     </footer>
