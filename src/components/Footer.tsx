@@ -30,10 +30,11 @@ const Footer = () => {
       <div className="container py-14 lg:py-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
           <div>
-            <a href="#home" className="focus-ring inline-block rounded-lg" aria-label="Solidcare Mobile Toilets, back to top">
+            <a href="#home" className="focus-ring inline-block rounded-lg" aria-label="Solidcare Rental Services, back to top">
               <Logo variant="light" />
             </a>
-            <p className="mt-5 max-w-xs text-sm text-white/70">
+            <p className="mt-4 text-sm tracking-[0.12em] text-white/85">&ldquo;Rentals re-defined&rdquo;</p>
+            <p className="mt-3 max-w-xs text-sm text-white/70">
               Professional portable sanitation solutions for events, construction sites, and outdoor venues. Quality
               you can trust.
             </p>
