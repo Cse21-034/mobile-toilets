@@ -3,52 +3,38 @@ import { Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
+import { photos, type Photo } from "@/lib/photos";
 import { cn } from "@/lib/utils";
-import fleetTrailer from "@/assets/fleet-trailer.jpg";
-import fleetRow from "@/assets/toilet1.jpg";
-import interiorSink from "@/assets/interior-sink.jpg";
-import interiorToilet from "@/assets/inside1.jpg";
 
-type Photo = {
-  src: string;
-  width: number;
-  height: number;
+type GalleryPhoto = Photo & {
   caption: string;
   /** Grid placement classes */
   className?: string;
 };
 
-const photos: Photo[] = [
+const galleryPhotos: GalleryPhoto[] = [
   {
-    src: fleetTrailer,
-    width: 1400,
-    height: 933,
+    ...photos.fleetTrailer,
     caption: "VIP trailer with separate ladies & gents doors",
     className: "sm:col-span-2 md:row-span-2",
   },
   {
-    src: fleetRow,
-    width: 1080,
-    height: 720,
+    ...photos.fleetRow,
     caption: "Trailer units on site",
     className: "md:col-span-2",
   },
   {
-    src: interiorSink,
-    width: 1200,
-    height: 800,
+    ...photos.interiorSink,
     caption: "Interior with hand basin and soap dispenser",
   },
   {
-    src: interiorToilet,
-    width: 752,
-    height: 1020,
+    ...photos.interiorToilet,
     caption: "Flush toilet interior with natural light",
   },
 ];
 
 const GallerySection = () => {
-  const [selected, setSelected] = useState<Photo | null>(null);
+  const [selected, setSelected] = useState<GalleryPhoto | null>(null);
 
   return (
     <section id="gallery" className="section-padding bg-background">
@@ -60,7 +46,7 @@ const GallerySection = () => {
         />
 
         <div className="grid auto-rows-[16rem] gap-4 sm:grid-cols-2 md:auto-rows-[14rem] md:grid-cols-4 lg:auto-rows-[17rem]">
-          {photos.map((photo, index) => (
+          {galleryPhotos.map((photo, index) => (
             <Reveal key={photo.src} delay={index * 80} className={cn("h-full", photo.className)}>
               <button
                 type="button"

@@ -1,40 +1,46 @@
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
-import serviceDelivery from "@/assets/service-delivery.jpg";
-import serviceHygiene from "@/assets/service-hygiene.jpg";
-import serviceFlexible from "@/assets/service-flexible.jpg";
-import serviceMaintenance from "@/assets/service-maintenance.jpg";
-import serviceEvents from "@/assets/service-events.jpg";
-import serviceEco from "@/assets/service-eco.jpg";
+import { photos, type Photo } from "@/lib/photos";
 
-const services = [
+const services: {
+  photo: Photo;
+  /** CSS object-position, to choose which part of the photo the card crop shows */
+  position?: string;
+  /** Tighter crop, so a photo used twice looks different the second time */
+  zoom?: { scale: number; origin: string };
+  title: string;
+  description: string;
+}[] = [
   {
-    image: serviceDelivery,
+    photo: photos.fleetTrailer,
     title: "Fast Delivery",
     description: "Quick and efficient delivery to your location anywhere in the region.",
   },
   {
-    image: serviceHygiene,
+    photo: photos.interiorSink,
     title: "Hygienic & Clean",
     description: "All units are thoroughly sanitized and maintained to the highest standards.",
   },
   {
-    image: serviceFlexible,
+    photo: photos.fleetRow,
     title: "Flexible Rentals",
     description: "Daily, weekly, or monthly rental options to suit your project timeline.",
   },
   {
-    image: serviceMaintenance,
+    photo: photos.interiorToilet,
+    position: "50% 88%",
     title: "Regular Servicing",
     description: "Scheduled maintenance and cleaning throughout your rental period.",
   },
   {
-    image: serviceEvents,
+    photo: photos.fleetRow,
+    zoom: { scale: 1.5, origin: "78% 58%" },
     title: "Event Specialists",
     description: "Experienced in handling large events, festivals, and construction sites.",
   },
   {
-    image: serviceEco,
+    photo: photos.interiorSink,
+    zoom: { scale: 1.9, origin: "55% 58%" },
     title: "Eco-Friendly",
     description: "Environmentally responsible waste management and disposal practices.",
   },
@@ -51,17 +57,23 @@ const ServicesSection = () => {
         />
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-          {services.map(({ image, title, description }, index) => (
+          {services.map(({ photo, position, zoom, title, description }, index) => (
             <Reveal key={title} delay={(index % 3) * 80} className="h-full">
               <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-elevated">
                 <div className="aspect-[16/10] overflow-hidden">
                   <img
-                    src={image}
+                    src={photo.src}
                     alt=""
-                    width={512}
-                    height={512}
+                    width={photo.width}
+                    height={photo.height}
                     loading="lazy"
                     decoding="async"
+                    // `scale` is a separate CSS property, so it stacks with the hover zoom class.
+                    // It must be a string: React would turn the number 1.5 into the invalid "1.5px".
+                    style={{
+                      objectPosition: position,
+                      ...(zoom && { scale: `${zoom.scale}`, transformOrigin: zoom.origin }),
+                    }}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>

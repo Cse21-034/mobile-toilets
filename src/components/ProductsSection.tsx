@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
 import { type ToiletType } from "@/lib/site";
-import toiletStandard from "@/assets/toilet-standard.jpg";
-import toiletVip from "@/assets/toilet-vip.jpg";
-import toiletAccessible from "@/assets/toilet-accessible.jpg";
+import { photos, type Photo } from "@/lib/photos";
 
 const products: {
   type: ToiletType;
   name: string;
-  image: string;
+  photo: Photo;
+  /** CSS object-position, to choose which part of the photo the card crop shows */
+  position?: string;
   description: string;
   features: string[];
   ideal: string;
@@ -19,7 +19,7 @@ const products: {
   {
     type: "standard",
     name: "Standard Portable Toilet",
-    image: toiletStandard,
+    photo: photos.fleetRow,
     description: "Our most popular option for construction sites and outdoor events.",
     features: ["Durable construction", "Non-slip flooring", "Ventilation system", "Hand sanitizer dispenser"],
     ideal: "Construction sites, small events",
@@ -28,7 +28,7 @@ const products: {
   {
     type: "vip",
     name: "VIP Luxury Toilet Trailer",
-    image: toiletVip,
+    photo: photos.fleetTrailer,
     description: "Premium mobile restroom with upscale amenities for special occasions.",
     features: ["Flushing toilet", "Running water sink", "Mirror & lighting", "Climate control available"],
     ideal: "Weddings, corporate events, VIP areas",
@@ -36,7 +36,8 @@ const products: {
   {
     type: "accessible",
     name: "Accessible Toilet Unit",
-    image: toiletAccessible,
+    photo: photos.interiorToilet,
+    position: "50% 78%",
     description: "Spacious wheelchair-accessible unit meeting disability access requirements.",
     features: ["Wide doorway access", "Interior grab rails", "Lowered fixtures", "Extra interior space"],
     ideal: "Public events, inclusive facilities",
@@ -64,12 +65,13 @@ const ProductsSection = ({ onRequestQuote }: ProductsSectionProps) => {
               <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-elevated">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
-                    src={product.image}
-                    alt={product.name}
-                    width={1024}
-                    height={768}
+                    src={product.photo.src}
+                    alt={product.photo.alt}
+                    width={product.photo.width}
+                    height={product.photo.height}
                     loading="lazy"
                     decoding="async"
+                    style={product.position ? { objectPosition: product.position } : undefined}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   {product.badge && (

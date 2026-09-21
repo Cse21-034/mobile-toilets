@@ -1,5 +1,5 @@
 import { ArrowRight, BadgeCheck, Clock, Phone, Sparkles } from "lucide-react";
-import fleetTrailer from "@/assets/fleet-trailer.jpg";
+import { photos } from "@/lib/photos";
 import { site } from "@/lib/site";
 
 const highlights = [
@@ -67,10 +67,10 @@ const HeroSection = () => {
         <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
           <div aria-hidden="true" className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-cta/40 to-transparent blur-2xl" />
           <img
-            src={fleetTrailer}
-            width={1400}
-            height={933}
-            alt="White and silver Solidcare VIP toilet trailer with separate ladies and gents doors and access steps"
+            src={photos.fleetTrailer.src}
+            width={photos.fleetTrailer.width}
+            height={photos.fleetTrailer.height}
+            alt={photos.fleetTrailer.alt}
             className="relative aspect-[3/2] w-full rounded-3xl object-cover shadow-elevated ring-1 ring-white/20"
           />
           <div className="absolute -top-4 right-4 rounded-full bg-cta px-4 py-2 text-sm font-bold text-cta-foreground shadow-card">
