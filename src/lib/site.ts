@@ -6,11 +6,11 @@ export const site = {
   name: "Solidcare Mobile Toilets",
   phones: [
     { display: "+267 73 106 254", tel: "+26773106254" },
-    { display: "+267 76 764 118", tel: "+26776764118" },
+    { display: "+267 76 350 238", tel: "+26776350238" },
   ],
   /** International format, digits only, as required by wa.me links */
   whatsapp: "26773106254",
-  email: "technical@solidcareservices.com",
+  email: "solidcaremobiletoilets661@gmail.com",
   hours: [
     { days: "Mon – Fri", time: "7:00 AM – 6:00 PM" },
     { days: "Sat", time: "8:00 AM – 2:00 PM" },
