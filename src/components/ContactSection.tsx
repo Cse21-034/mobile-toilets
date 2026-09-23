@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
-import { useForm, type UseFormReturn } from "react-hook-form";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { useForm, type Resolver, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -19,7 +27,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
-import { durations, mailtoLink, site, toiletTypes, whatsappLink, type QuoteRequest } from "@/lib/site";
+import {
+  durations,
+  mailtoLink,
+  site,
+  toiletTypes,
+  whatsappLink,
+  type ContactIntent,
+  type ContactRequest,
+} from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 const todayISO = () => {
   const now = new Date();
@@ -27,17 +44,24 @@ const todayISO = () => {
   return now.toISOString().slice(0, 10);
 };
 
+// Shared by both schemas so every field keeps the exact same TypeScript shape regardless
+// of which one is active; only the runtime rules (required vs. free-form) differ below.
+const requiredName = z.string().trim().min(2, "Please enter your full name");
+const requiredPhone = z
+  .string()
+  .trim()
+  .min(7, "Please enter a phone number we can reach you on")
+  .regex(/^\+?[\d\s()-]+$/, "Use digits, spaces and + only");
+const optionalEmail = z
+  .string()
+  .trim()
+  .refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "Enter a valid email address");
+
+/** Full quote request: name/phone/email plus every event detail we need to price it. */
 const quoteSchema = z.object({
-  name: z.string().trim().min(2, "Please enter your full name"),
-  phone: z
-    .string()
-    .trim()
-    .min(7, "Please enter a phone number we can reach you on")
-    .regex(/^\+?[\d\s()-]+$/, "Use digits, spaces and + only"),
-  email: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "Enter a valid email address"),
+  name: requiredName,
+  phone: requiredPhone,
+  email: optionalEmail,
   eventLocation: z.string().trim().min(2, "Tell us where the units should be delivered"),
   eventDate: z
     .string()
@@ -55,6 +79,23 @@ const quoteSchema = z.object({
   message: z.string().trim().max(1000, "Please keep this under 1000 characters"),
 });
 
+/** General enquiry: just enough to reply, plus a required message since there's no event to go on. */
+const generalSchema = z.object({
+  name: requiredName,
+  phone: requiredPhone,
+  email: optionalEmail,
+  eventLocation: z.string(),
+  eventDate: z.string(),
+  duration: z.string(),
+  toiletType: z.string(),
+  quantity: z.string(),
+  message: z
+    .string()
+    .trim()
+    .min(10, "Tell us a little more about what you need")
+    .max(1000, "Please keep this under 1000 characters"),
+});
+
 type QuoteFormValues = z.infer<typeof quoteSchema>;
 
 const defaultValues: QuoteFormValues = {
@@ -69,14 +110,71 @@ const defaultValues: QuoteFormValues = {
   message: "",
 };
 
+// Copy that changes depending on whether the visitor wants a quote or is just getting in touch.
+const modeCopy: Record<
+  ContactIntent,
+  {
+    tabLabel: string;
+    eyebrow: string;
+    title: string;
+    description: string;
+    messageLabel: string;
+    messageOptional: boolean;
+    messagePlaceholder: string;
+    submitLabel: string;
+    helper: string;
+    readyHeading: string;
+  }
+> = {
+  quote: {
+    tabLabel: "Request a Quote",
+    eyebrow: "Get In Touch",
+    title: "Request a Quotation",
+    description:
+      "Fill out the form below with your event details and we'll get back to you with a customised quote within 24 hours.",
+    messageLabel: "Additional details",
+    messageOptional: true,
+    messagePlaceholder: "Tell us more about your event or any special requirements...",
+    submitLabel: "Review & send request",
+    helper: "You'll be able to check your request, then send it by WhatsApp or email.",
+    readyHeading: "Your quote request is ready",
+  },
+  general: {
+    tabLabel: "General Enquiry",
+    eyebrow: "Get In Touch",
+    title: "Contact Us",
+    description: "Have a question or need more information? Send us a message and we'll get back to you within 24 hours.",
+    messageLabel: "How can we help?",
+    messageOptional: false,
+    messagePlaceholder: "Tell us what you'd like to know or ask us about...",
+    submitLabel: "Review & send message",
+    helper: "You'll be able to check your message, then send it by WhatsApp or email.",
+    readyHeading: "Your message is ready",
+  },
+};
+
 const labelFor = (options: readonly { value: string; label: string }[], value: string) =>
   options.find((option) => option.value === value)?.label ?? value;
 
 const formatDate = (isoDate: string) =>
   new Date(`${isoDate}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
-const buildMessage = (values: QuoteFormValues) =>
-  [
+const buildMessage = (values: QuoteFormValues, mode: ContactIntent) => {
+  if (mode === "general") {
+    return [
+      `Hi ${site.name}, I have a question:`,
+      "",
+      `Name: ${values.name}`,
+      `Phone: ${values.phone}`,
+      values.email ? `Email: ${values.email}` : null,
+      "",
+      values.message,
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n");
+  }
+
+  return [
     `Hi ${site.name}, I'd like a quote:`,
     "",
     `Name: ${values.name}`,
@@ -91,6 +189,12 @@ const buildMessage = (values: QuoteFormValues) =>
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+};
+
+const emailSubject = (values: QuoteFormValues, mode: ContactIntent) =>
+  mode === "general"
+    ? `Enquiry from ${values.name}`
+    : `Quote request: ${labelFor(toiletTypes, values.toiletType)} in ${values.eventLocation}`;
 
 // On narrow screens a long address wraps at the "@" instead of in the middle of a word
 const [emailUser, emailDomain] = site.email.split("@");
@@ -181,27 +285,33 @@ const ContactRow = ({ icon: Icon, label, children }: { icon: LucideIcon; label: 
 );
 
 type ReadyPanelProps = {
+  mode: ContactIntent;
   values: QuoteFormValues;
   headingRef: RefObject<HTMLHeadingElement>;
   onEdit: () => void;
 };
 
 /** Shown after the form validates. Nothing is sent from the browser; the visitor picks WhatsApp or email. */
-const ReadyPanel = ({ values, headingRef, onEdit }: ReadyPanelProps) => {
-  const message = buildMessage(values);
+const ReadyPanel = ({ mode, values, headingRef, onEdit }: ReadyPanelProps) => {
+  const copy = modeCopy[mode];
+  const message = buildMessage(values, mode);
   const rows: [string, string][] = [
     ["Name", values.name],
     ["Phone", values.phone],
   ];
   if (values.email) rows.push(["Email", values.email]);
-  rows.push(
-    ["Event location", values.eventLocation],
-    ["Start date", formatDate(values.eventDate)],
-    ["Rental duration", labelFor(durations, values.duration)],
-    ["Toilet type", labelFor(toiletTypes, values.toiletType)],
-    ["Quantity", values.quantity],
-  );
-  if (values.message) rows.push(["Notes", values.message]);
+  if (mode === "quote") {
+    rows.push(
+      ["Event location", values.eventLocation],
+      ["Start date", formatDate(values.eventDate)],
+      ["Rental duration", labelFor(durations, values.duration)],
+      ["Toilet type", labelFor(toiletTypes, values.toiletType)],
+      ["Quantity", values.quantity],
+    );
+    if (values.message) rows.push(["Notes", values.message]);
+  } else {
+    rows.push(["Message", values.message]);
+  }
 
   return (
     <div>
@@ -209,7 +319,7 @@ const ReadyPanel = ({ values, headingRef, onEdit }: ReadyPanelProps) => {
         <Check className="h-6 w-6" strokeWidth={3} aria-hidden="true" />
       </span>
       <h3 ref={headingRef} tabIndex={-1} className="mt-4 text-2xl font-extrabold outline-none">
-        Your quote request is ready
+        {copy.readyHeading}
       </h3>
       <p className="mt-2 text-muted-foreground">
         Nothing has been sent yet. Choose how you&rsquo;d like to send it to our team &mdash; we reply within 24
@@ -235,13 +345,7 @@ const ReadyPanel = ({ values, headingRef, onEdit }: ReadyPanelProps) => {
           <MessageCircle className="h-5 w-5" aria-hidden="true" />
           Send on WhatsApp
         </a>
-        <a
-          href={mailtoLink(
-            `Quote request: ${labelFor(toiletTypes, values.toiletType)} in ${values.eventLocation}`,
-            message,
-          )}
-          className="btn-outline-dark px-8 py-4 text-base"
-        >
+        <a href={mailtoLink(emailSubject(values, mode), message)} className="btn-outline-dark px-8 py-4 text-base">
           <Mail className="h-5 w-5" aria-hidden="true" />
           Send by email
         </a>
@@ -260,40 +364,57 @@ const ReadyPanel = ({ values, headingRef, onEdit }: ReadyPanelProps) => {
 };
 
 type ContactSectionProps = {
-  /** Set when a visitor picks a unit in "Our Toilets"; pre-selects it in the form */
-  quoteRequest: QuoteRequest | null;
+  /** Set whenever a visitor is sent here, e.g. by the "Contact" link or "Request this unit" */
+  contactRequest: ContactRequest | null;
 };
 
-const ContactSection = ({ quoteRequest }: ContactSectionProps) => {
+const ContactSection = ({ contactRequest }: ContactSectionProps) => {
+  const [mode, setMode] = useState<ContactIntent>("quote");
   const [submitted, setSubmitted] = useState<QuoteFormValues | null>(null);
   const readyHeadingRef = useRef<HTMLHeadingElement>(null);
 
+  // The active schema is read from this ref at validation time, so switching `mode` takes
+  // effect immediately without needing to recreate the form (and losing what was typed).
+  const schemaRef = useRef<z.ZodType<QuoteFormValues>>(quoteSchema);
+  schemaRef.current = mode === "quote" ? quoteSchema : generalSchema;
+  const resolver: Resolver<QuoteFormValues> = useCallback(
+    (values, context, options) => zodResolver(schemaRef.current)(values, context, options),
+    [],
+  );
+
   const form = useForm<QuoteFormValues>({
-    resolver: zodResolver(quoteSchema),
+    resolver,
     defaultValues,
     mode: "onTouched",
   });
   const { setValue } = form;
 
   useEffect(() => {
-    if (!quoteRequest) return;
-    setValue("toiletType", quoteRequest.type, { shouldValidate: true, shouldDirty: true });
+    if (!contactRequest) return;
+    setMode(contactRequest.intent);
+    if (contactRequest.toiletType) {
+      setValue("toiletType", contactRequest.toiletType, { shouldValidate: true, shouldDirty: true });
+    }
     setSubmitted(null);
-  }, [quoteRequest, setValue]);
+  }, [contactRequest, setValue]);
 
   // Move focus to the confirmation heading so keyboard and screen-reader users land on it
   useEffect(() => {
     if (submitted) readyHeadingRef.current?.focus();
   }, [submitted]);
 
+  const switchMode = (next: ContactIntent) => {
+    if (next === mode) return;
+    setMode(next);
+    setSubmitted(null);
+  };
+
+  const copy = modeCopy[mode];
+
   return (
     <section id="contact" className="section-padding bg-muted">
       <div className="container">
-        <SectionHeader
-          eyebrow="Get In Touch"
-          title="Request a Quotation"
-          description="Fill out the form below with your event details and we'll get back to you with a customised quote within 24 hours."
-        />
+        <SectionHeader eyebrow={copy.eyebrow} title={copy.title} description={copy.description} />
 
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Sticky on desktop so it stays beside the form instead of stretching to the form's height */}
@@ -323,7 +444,10 @@ const ContactSection = ({ quoteRequest }: ContactSectionProps) => {
                   </a>
                 </ContactRow>
                 <ContactRow icon={Mail} label="Email">
-                  <a href={`mailto:${site.email}`} className={`${contactLinkClass} inline-flex break-words text-sm sm:text-base`}>
+                  <a
+                    href={`mailto:${site.email}`}
+                    className={`${contactLinkClass} inline-flex break-words text-sm sm:text-base`}
+                  >
                     <span>
                       {emailUser}
                       <wbr />@{emailDomain}
@@ -347,119 +471,142 @@ const ContactSection = ({ quoteRequest }: ContactSectionProps) => {
           <Reveal className="lg:col-span-2" delay={100}>
             <div className="rounded-3xl border bg-card p-6 shadow-card sm:p-8">
               {submitted ? (
-                <ReadyPanel values={submitted} headingRef={readyHeadingRef} onEdit={() => setSubmitted(null)} />
+                <ReadyPanel mode={mode} values={submitted} headingRef={readyHeadingRef} onEdit={() => setSubmitted(null)} />
               ) : (
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(setSubmitted)} noValidate className="space-y-8">
-                    <fieldset className="min-w-0">
-                      <legend className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.14em] text-primary">
-                        <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-primary-foreground">
-                          1
-                        </span>
-                        Your details
-                      </legend>
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        <TextField form={form} name="name" label="Full name" autoComplete="name" placeholder="John Doe" />
-                        <TextField
-                          form={form}
-                          name="phone"
-                          label="Phone number"
-                          type="tel"
-                          inputMode="tel"
-                          autoComplete="tel"
-                          placeholder="+267 71 234 567"
-                        />
-                        <TextField
-                          form={form}
-                          name="email"
-                          label="Email address"
-                          optional
-                          type="email"
-                          autoComplete="email"
-                          placeholder="john@example.com"
-                          className="sm:col-span-2"
-                        />
-                      </div>
-                    </fieldset>
-
-                    <fieldset className="min-w-0">
-                      <legend className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.14em] text-primary">
-                        <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-primary-foreground">
-                          2
-                        </span>
-                        Event details
-                      </legend>
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        <TextField
-                          form={form}
-                          name="eventLocation"
-                          label="Event location"
-                          placeholder="City or address"
-                          className="sm:col-span-2"
-                        />
-                        <TextField
-                          form={form}
-                          name="eventDate"
-                          label="Event / start date"
-                          type="date"
-                          min={todayISO()}
-                        />
-                        <SelectField
-                          form={form}
-                          name="duration"
-                          label="Rental duration"
-                          placeholder="Select duration"
-                          options={durations}
-                        />
-                        <SelectField
-                          form={form}
-                          name="toiletType"
-                          label="Toilet type"
-                          placeholder="Select type"
-                          options={toiletTypes}
-                        />
-                        <TextField
-                          form={form}
-                          name="quantity"
-                          label="Quantity needed"
-                          inputMode="numeric"
-                          placeholder="e.g. 5"
-                        />
-                        <FormField
-                          control={form.control}
-                          name="message"
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-2">
-                              <FormLabel className="font-semibold">
-                                Additional details
-                                <span className="font-normal text-muted-foreground"> (optional)</span>
-                              </FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  rows={4}
-                                  placeholder="Tell us more about your event or any special requirements..."
-                                  className={`resize-none ${invalidBorder}`}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </fieldset>
-
-                    <div>
-                      <button type="submit" className="btn-cta w-full px-8 py-4 text-base sm:w-auto">
-                        Review &amp; send request
-                        <Send className="h-4 w-4" aria-hidden="true" />
+                <>
+                  <div role="tablist" aria-label="What would you like to send us?" className="mb-8 inline-flex rounded-xl bg-muted p-1">
+                    {(Object.keys(modeCopy) as ContactIntent[]).map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        role="tab"
+                        aria-selected={mode === key}
+                        onClick={() => switchMode(key)}
+                        className={cn(
+                          "focus-ring min-h-10 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
+                          mode === key ? "bg-card text-primary shadow-soft" : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {modeCopy[key].tabLabel}
                       </button>
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        You&rsquo;ll be able to check your request, then send it by WhatsApp or email.
-                      </p>
-                    </div>
-                  </form>
-                </Form>
+                    ))}
+                  </div>
+
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(setSubmitted)} noValidate className="space-y-8">
+                      <fieldset className="min-w-0">
+                        <legend className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.14em] text-primary">
+                          {mode === "quote" && (
+                            <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-primary-foreground">
+                              1
+                            </span>
+                          )}
+                          Your details
+                        </legend>
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <TextField form={form} name="name" label="Full name" autoComplete="name" placeholder="John Doe" />
+                          <TextField
+                            form={form}
+                            name="phone"
+                            label="Phone number"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="+267 71 234 567"
+                          />
+                          <TextField
+                            form={form}
+                            name="email"
+                            label="Email address"
+                            optional
+                            type="email"
+                            autoComplete="email"
+                            placeholder="john@example.com"
+                            className="sm:col-span-2"
+                          />
+                        </div>
+                      </fieldset>
+
+                      {mode === "quote" && (
+                        <fieldset className="min-w-0">
+                          <legend className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.14em] text-primary">
+                            <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-primary-foreground">
+                              2
+                            </span>
+                            Event details
+                          </legend>
+                          <div className="grid gap-5 sm:grid-cols-2">
+                            <TextField
+                              form={form}
+                              name="eventLocation"
+                              label="Event location"
+                              placeholder="City or address"
+                              className="sm:col-span-2"
+                            />
+                            <TextField
+                              form={form}
+                              name="eventDate"
+                              label="Event / start date"
+                              type="date"
+                              min={todayISO()}
+                            />
+                            <SelectField
+                              form={form}
+                              name="duration"
+                              label="Rental duration"
+                              placeholder="Select duration"
+                              options={durations}
+                            />
+                            <SelectField
+                              form={form}
+                              name="toiletType"
+                              label="Toilet type"
+                              placeholder="Select type"
+                              options={toiletTypes}
+                            />
+                            <TextField
+                              form={form}
+                              name="quantity"
+                              label="Quantity needed"
+                              inputMode="numeric"
+                              placeholder="e.g. 5"
+                            />
+                          </div>
+                        </fieldset>
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="message"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-semibold">
+                              {copy.messageLabel}
+                              {copy.messageOptional && <span className="font-normal text-muted-foreground"> (optional)</span>}
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                rows={4}
+                                placeholder={copy.messagePlaceholder}
+                                className={`resize-none ${invalidBorder}`}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div>
+                        <button type="submit" className="btn-cta w-full px-8 py-4 text-base sm:w-auto">
+                          {copy.submitLabel}
+                          <Send className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <p className="mt-3 text-sm text-muted-foreground">{copy.helper}</p>
+                      </div>
+                    </form>
+                  </Form>
+                </>
               )}
             </div>
           </Reveal>

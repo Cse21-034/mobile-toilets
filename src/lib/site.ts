@@ -37,8 +37,14 @@ export const durations = [
   { value: "6-months", label: "6+ Months" },
 ] as const;
 
-/** Set when a visitor clicks "Request this unit" so the quote form can pre-select it. */
-export type QuoteRequest = { type: ToiletType; nonce: number };
+/** Whether the contact section should ask for event details ("quote") or just a message ("general"). */
+export type ContactIntent = "quote" | "general";
+
+/**
+ * Set whenever a visitor is sent to the contact section, so it can switch to the right
+ * form and, when a specific unit was picked (e.g. "Request this unit"), pre-select it.
+ */
+export type ContactRequest = { intent: ContactIntent; toiletType?: ToiletType; nonce: number };
 
 export const whatsappLink = (message?: string) =>
   `https://wa.me/${site.whatsapp}${message ? `?text=${encodeURIComponent(message)}` : ""}`;

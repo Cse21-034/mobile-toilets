@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useActiveSection } from "@/hooks/use-active-section";
-import { site } from "@/lib/site";
+import { site, type ContactIntent } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -15,7 +15,12 @@ const links = [
 
 const sectionIds = ["home", ...links.map((link) => link.id)];
 
-const Header = () => {
+type HeaderProps = {
+  /** "Contact" opens a general enquiry; "Get a Quote" opens the quote form */
+  onNavigateContact: (intent: ContactIntent) => void;
+};
+
+const Header = ({ onNavigateContact }: HeaderProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const active = useActiveSection(sectionIds);
@@ -48,6 +53,8 @@ const Header = () => {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const linkIntent = (id: string): ContactIntent | undefined => (id === "contact" ? "general" : undefined);
+
   return (
     <header
       className={cn(
@@ -65,10 +72,12 @@ const Header = () => {
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {links.map((link) => {
             const isActive = active === link.id;
+            const intent = linkIntent(link.id);
             return (
               <a
                 key={link.id}
                 href={`#${link.id}`}
+                onClick={intent ? () => onNavigateContact(intent) : undefined}
                 aria-current={isActive ? "location" : undefined}
                 className={cn(
                   "focus-ring relative rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:text-primary",
@@ -96,7 +105,7 @@ const Header = () => {
             <Phone className="h-4 w-4" aria-hidden="true" />
             {phone.display}
           </a>
-          <a href="#contact" className="btn-cta !min-h-10 px-5 py-2 text-sm">
+          <a href="#contact" onClick={() => onNavigateContact("quote")} className="btn-cta !min-h-10 px-5 py-2 text-sm">
             Get a Quote
           </a>
         </div>
@@ -117,21 +126,34 @@ const Header = () => {
       {/* Mobile navigation */}
       <nav id="mobile-menu" aria-label="Mobile" hidden={!menuOpen} className="border-t border-border bg-background lg:hidden">
         <div className="container flex flex-col py-3">
-          {links.map((link) => (
-            <a
-              key={link.id}
-              href={`#${link.id}`}
-              onClick={closeMenu}
-              aria-current={active === link.id ? "location" : undefined}
-              className={cn(
-                "focus-ring flex min-h-12 items-center rounded-lg px-3 text-base font-semibold transition-colors hover:bg-accent",
-                active === link.id ? "bg-accent text-primary" : "text-foreground",
-              )}
-            >
-              {link.label}
-            </a>
-          ))}
-          <a href="#contact" onClick={closeMenu} className="btn-cta mt-3">
+          {links.map((link) => {
+            const intent = linkIntent(link.id);
+            return (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                onClick={() => {
+                  if (intent) onNavigateContact(intent);
+                  closeMenu();
+                }}
+                aria-current={active === link.id ? "location" : undefined}
+                className={cn(
+                  "focus-ring flex min-h-12 items-center rounded-lg px-3 text-base font-semibold transition-colors hover:bg-accent",
+                  active === link.id ? "bg-accent text-primary" : "text-foreground",
+                )}
+              >
+                {link.label}
+              </a>
+            );
+          })}
+          <a
+            href="#contact"
+            onClick={() => {
+              onNavigateContact("quote");
+              closeMenu();
+            }}
+            className="btn-cta mt-3"
+          >
             Get a Quote
           </a>
         </div>

@@ -8,12 +8,15 @@ import GallerySection from "@/components/GallerySection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import StickyContactBar from "@/components/StickyContactBar";
-import { type QuoteRequest, type ToiletType } from "@/lib/site";
+import { type ContactIntent, type ContactRequest, type ToiletType } from "@/lib/site";
 
 const Index = () => {
-  // Choosing a unit in "Our Toilets" pre-selects it in the quote form
-  const [quoteRequest, setQuoteRequest] = useState<QuoteRequest | null>(null);
-  const requestQuote = (type: ToiletType) => setQuoteRequest({ type, nonce: Date.now() });
+  const [contactRequest, setContactRequest] = useState<ContactRequest | null>(null);
+
+  // Choosing a unit in "Our Toilets" opens the quote form with that type pre-selected
+  const requestQuote = (type: ToiletType) => setContactRequest({ intent: "quote", toiletType: type, nonce: Date.now() });
+  // "Get a Quote" / "Contact" links elsewhere just pick which form to show
+  const navigateContact = (intent: ContactIntent) => setContactRequest({ intent, nonce: Date.now() });
 
   return (
     <div className="min-h-screen">
@@ -23,17 +26,17 @@ const Index = () => {
       >
         Skip to main content
       </a>
-      <Header />
+      <Header onNavigateContact={navigateContact} />
       <main id="main">
-        <HeroSection />
+        <HeroSection onNavigateContact={navigateContact} />
         <ServicesSection />
         <ProductsSection onRequestQuote={requestQuote} />
-        <HowItWorks />
+        <HowItWorks onNavigateContact={navigateContact} />
         <GallerySection />
-        <ContactSection quoteRequest={quoteRequest} />
+        <ContactSection contactRequest={contactRequest} />
       </main>
-      <Footer />
-      <StickyContactBar />
+      <Footer onNavigateContact={navigateContact} />
+      <StickyContactBar onNavigateContact={navigateContact} />
     </div>
   );
 };

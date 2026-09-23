@@ -1,6 +1,6 @@
 import { ArrowUp, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import Logo from "@/components/Logo";
-import { site, whatsappLink } from "@/lib/site";
+import { site, whatsappLink, type ContactIntent } from "@/lib/site";
 import { socialLinks } from "@/lib/social";
 
 const quickLinks = [
@@ -23,7 +23,12 @@ const serviceList = [
 const linkClass =
   "focus-ring rounded text-sm text-white/70 transition-colors hover:text-white";
 
-const Footer = () => {
+type FooterProps = {
+  /** "Contact" opens a general enquiry in the contact section */
+  onNavigateContact: (intent: ContactIntent) => void;
+};
+
+const Footer = ({ onNavigateContact }: FooterProps) => {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -61,7 +66,11 @@ const Footer = () => {
             <ul className="mt-5 space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <a href={link.href} className={linkClass}>
+                  <a
+                    href={link.href}
+                    onClick={link.href === "#contact" ? () => onNavigateContact("general") : undefined}
+                    className={linkClass}
+                  >
                     {link.label}
                   </a>
                 </li>

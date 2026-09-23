@@ -1,5 +1,6 @@
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
+import type { ContactIntent } from "@/lib/site";
 
 const steps = [
   {
@@ -18,7 +19,11 @@ const steps = [
   },
 ];
 
-const HowItWorks = () => {
+type HowItWorksProps = {
+  onNavigateContact: (intent: ContactIntent) => void;
+};
+
+const HowItWorks = ({ onNavigateContact }: HowItWorksProps) => {
   return (
     <section id="how-it-works" className="section-padding hero-gradient on-dark relative overflow-hidden text-white">
       <div aria-hidden="true" className="pointer-events-none absolute -right-40 top-10 h-96 w-96 rounded-full bg-cta/10 blur-3xl" />
@@ -51,7 +56,7 @@ const HowItWorks = () => {
         </ol>
 
         <Reveal className="mt-12 text-center">
-          <a href="#contact" className="btn-cta px-8 py-4 text-base">
+          <a href="#contact" onClick={() => onNavigateContact("quote")} className="btn-cta px-8 py-4 text-base">
             Start with a free quote
           </a>
         </Reveal>

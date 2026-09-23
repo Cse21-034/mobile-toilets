@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { FileText, MessageCircle, Phone } from "lucide-react";
-import { site, whatsappLink } from "@/lib/site";
+import { site, whatsappLink, type ContactIntent } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
+type StickyContactBarProps = {
+  onNavigateContact: (intent: ContactIntent) => void;
+};
+
 /** Thumb-reach call / WhatsApp / quote bar for phones and tablets. Slides in once the visitor scrolls past the top. */
-const StickyContactBar = () => {
+const StickyContactBar = ({ onNavigateContact }: StickyContactBarProps) => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -36,6 +40,7 @@ const StickyContactBar = () => {
         </a>
         <a
           href="#contact"
+          onClick={() => onNavigateContact("quote")}
           className="focus-ring flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl bg-cta px-2 py-1.5 text-xs font-bold text-cta-foreground transition-colors hover:bg-cta-hover"
         >
           <FileText className="h-5 w-5" aria-hidden="true" />

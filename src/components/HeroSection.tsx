@@ -1,6 +1,6 @@
 import { ArrowRight, BadgeCheck, Clock, Phone, Sparkles } from "lucide-react";
 import { photos } from "@/lib/photos";
-import { site } from "@/lib/site";
+import { site, type ContactIntent } from "@/lib/site";
 
 const highlights = [
   { icon: Sparkles, text: "Clean, well-maintained facilities for all occasions" },
@@ -8,7 +8,11 @@ const highlights = [
   { icon: BadgeCheck, text: "Affordable pricing with professional service" },
 ];
 
-const HeroSection = () => {
+type HeroSectionProps = {
+  onNavigateContact: (intent: ContactIntent) => void;
+};
+
+const HeroSection = ({ onNavigateContact }: HeroSectionProps) => {
   const phone = site.phones[0];
 
   return (
@@ -52,7 +56,7 @@ const HeroSection = () => {
           </ul>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <a href="#contact" className="btn-cta px-8 py-4 text-base">
+            <a href="#contact" onClick={() => onNavigateContact("quote")} className="btn-cta px-8 py-4 text-base">
               Request a Quote
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </a>
