@@ -1,6 +1,7 @@
 import { ArrowUp, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import Logo from "@/components/Logo";
 import { site, whatsappLink } from "@/lib/site";
+import { socialLinks } from "@/lib/social";
 
 const quickLinks = [
   { href: "#home", label: "Home" },
@@ -37,6 +38,22 @@ const Footer = () => {
               Professional portable sanitation solutions for events, construction sites, and outdoor venues. Quality
               you can trust.
             </p>
+
+            <ul className="mt-6 flex flex-wrap gap-3">
+              {socialLinks.map(({ name, href, Icon, hoverClass }) => (
+                <li key={name}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Solidcare on ${name} (opens in a new tab)`}
+                    className={`focus-ring grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white/80 ring-1 ring-white/15 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft hover:ring-transparent ${hoverClass}`}
+                  >
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <nav aria-label="Footer">
