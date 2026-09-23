@@ -57,7 +57,7 @@ const Header = () => {
       )}
     >
       <div className="container flex h-16 items-center justify-between gap-4 lg:h-[4.5rem]">
-        <a href="#home" className="focus-ring rounded-lg" aria-label="Solidcare Rental Services, back to top">
+        <a href="#home" className="focus-ring rounded-lg" aria-label="Solidcare Mobile Toilets, back to top">
           <Logo />
         </a>
 
