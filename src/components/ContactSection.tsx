@@ -25,6 +25,7 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
 import {
@@ -289,10 +290,11 @@ type ReadyPanelProps = {
   values: QuoteFormValues;
   headingRef: RefObject<HTMLHeadingElement>;
   onEdit: () => void;
+  onSend: (channel: "whatsapp" | "email") => void;
 };
 
 /** Shown after the form validates. Nothing is sent from the browser; the visitor picks WhatsApp or email. */
-const ReadyPanel = ({ mode, values, headingRef, onEdit }: ReadyPanelProps) => {
+const ReadyPanel = ({ mode, values, headingRef, onEdit, onSend }: ReadyPanelProps) => {
   const copy = modeCopy[mode];
   const message = buildMessage(values, mode);
   const rows: [string, string][] = [
@@ -340,12 +342,17 @@ const ReadyPanel = ({ mode, values, headingRef, onEdit }: ReadyPanelProps) => {
           href={whatsappLink(message)}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => onSend("whatsapp")}
           className="btn-cta px-8 py-4 text-base"
         >
           <MessageCircle className="h-5 w-5" aria-hidden="true" />
           Send on WhatsApp
         </a>
-        <a href={mailtoLink(emailSubject(values, mode), message)} className="btn-outline-dark px-8 py-4 text-base">
+        <a
+          href={mailtoLink(emailSubject(values, mode), message)}
+          onClick={() => onSend("email")}
+          className="btn-outline-dark px-8 py-4 text-base"
+        >
           <Mail className="h-5 w-5" aria-hidden="true" />
           Send by email
         </a>
@@ -363,15 +370,61 @@ const ReadyPanel = ({ mode, values, headingRef, onEdit }: ReadyPanelProps) => {
   );
 };
 
+type SentPanelProps = {
+  mode: ContactIntent;
+  channel: "whatsapp" | "email";
+  name: string;
+  headingRef: RefObject<HTMLHeadingElement>;
+  onReset: () => void;
+};
+
+/**
+ * Shown once the visitor has clicked through to WhatsApp or email. We can't know whether
+ * they actually hit send there (or whether a mail app even opened), so this confirms what
+ * we do know — the link was opened — rather than claiming the message has been received.
+ */
+const SentPanel = ({ mode, channel, name, headingRef, onReset }: SentPanelProps) => {
+  const noun = mode === "quote" ? "quote request" : "message";
+  const firstName = name.trim().split(/\s+/)[0];
+
+  return (
+    <div>
+      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-secondary/15 text-secondary">
+        <Check className="h-6 w-6" strokeWidth={3} aria-hidden="true" />
+      </span>
+      <h3 ref={headingRef} tabIndex={-1} className="mt-4 text-2xl font-extrabold outline-none">
+        Thanks{firstName ? `, ${firstName}` : ""}!
+      </h3>
+      <p className="mt-2 max-w-md text-muted-foreground">
+        We&rsquo;ve opened {channel === "whatsapp" ? "WhatsApp" : "your email app"} with your {noun} ready to send.
+        Once you send it from there, our team will get back to you within 24 hours.
+      </p>
+      {channel === "email" && (
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">
+          Nothing open? Your device may not have an email app set up &mdash; use{" "}
+          <span className="font-medium text-foreground">Send on WhatsApp</span> instead, or call us directly.
+        </p>
+      )}
+
+      <button type="button" onClick={onReset} className="btn-outline-dark mt-6 px-6 py-3 text-sm">
+        Send another {noun}
+      </button>
+    </div>
+  );
+};
+
 type ContactSectionProps = {
   /** Set whenever a visitor is sent here, e.g. by the "Contact" link or "Request this unit" */
   contactRequest: ContactRequest | null;
 };
 
 const ContactSection = ({ contactRequest }: ContactSectionProps) => {
+  const { toast } = useToast();
   const [mode, setMode] = useState<ContactIntent>("quote");
   const [submitted, setSubmitted] = useState<QuoteFormValues | null>(null);
+  const [sent, setSent] = useState<"whatsapp" | "email" | null>(null);
   const readyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const sentHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // The active schema is read from this ref at validation time, so switching `mode` takes
   // effect immediately without needing to recreate the form (and losing what was typed).
@@ -396,20 +449,55 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
       setValue("toiletType", contactRequest.toiletType, { shouldValidate: true, shouldDirty: true });
     }
     setSubmitted(null);
+    setSent(null);
   }, [contactRequest, setValue]);
 
-  // Move focus to the confirmation heading so keyboard and screen-reader users land on it
+  // Move focus to whichever confirmation heading is showing, so keyboard and screen-reader
+  // users land on it instead of staying on the button they just pressed
   useEffect(() => {
-    if (submitted) readyHeadingRef.current?.focus();
-  }, [submitted]);
+    if (sent) sentHeadingRef.current?.focus();
+    else if (submitted) readyHeadingRef.current?.focus();
+  }, [submitted, sent]);
 
   const switchMode = (next: ContactIntent) => {
     if (next === mode) return;
     setMode(next);
     setSubmitted(null);
+    setSent(null);
   };
 
   const copy = modeCopy[mode];
+
+  const handleValidSubmit = (values: QuoteFormValues) => {
+    setSubmitted(values);
+    setSent(null);
+    toast({
+      title: copy.readyHeading,
+      description: "Choose WhatsApp or email below to send it to our team.",
+    });
+  };
+
+  const handleInvalidSubmit = () => {
+    toast({
+      variant: "destructive",
+      title: "A few details need fixing",
+      description: "Check the highlighted fields below and try again.",
+    });
+  };
+
+  const handleSend = (channel: "whatsapp" | "email") => {
+    setSent(channel);
+    toast({
+      title: channel === "whatsapp" ? "Opening WhatsApp…" : "Opening your email app…",
+      description: "Finish sending it there and our team will reply within 24 hours.",
+    });
+  };
+
+  const handleReset = () => {
+    form.reset(defaultValues);
+    setSubmitted(null);
+    setSent(null);
+  };
 
   return (
     <section id="contact" className="section-padding bg-muted">
@@ -470,8 +558,16 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
 
           <Reveal className="lg:col-span-2" delay={100}>
             <div className="rounded-3xl border bg-card p-6 shadow-card sm:p-8">
-              {submitted ? (
-                <ReadyPanel mode={mode} values={submitted} headingRef={readyHeadingRef} onEdit={() => setSubmitted(null)} />
+              {submitted && sent ? (
+                <SentPanel mode={mode} channel={sent} name={submitted.name} headingRef={sentHeadingRef} onReset={handleReset} />
+              ) : submitted ? (
+                <ReadyPanel
+                  mode={mode}
+                  values={submitted}
+                  headingRef={readyHeadingRef}
+                  onEdit={() => setSubmitted(null)}
+                  onSend={handleSend}
+                />
               ) : (
                 <>
                   <div role="tablist" aria-label="What would you like to send us?" className="mb-8 inline-flex rounded-xl bg-muted p-1">
@@ -493,7 +589,7 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
                   </div>
 
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit(setSubmitted)} noValidate className="space-y-8">
+                    <form onSubmit={form.handleSubmit(handleValidSubmit, handleInvalidSubmit)} noValidate className="space-y-8">
                       <fieldset className="min-w-0">
                         <legend className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.14em] text-primary">
                           {mode === "quote" && (
