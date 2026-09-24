@@ -10,11 +10,13 @@ import {
 import { useForm, type Resolver, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import emailjs from "@emailjs/browser";
 import {
   ArrowLeft,
   Check,
   ChevronDown,
   Clock,
+  Loader2,
   Mail,
   MapPin,
   MessageCircle,
@@ -28,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
+import { emailjsConfig, emailjsConfigured } from "@/lib/emailjs";
 import {
   durations,
   mailtoLink,
@@ -125,6 +128,8 @@ const modeCopy: Record<
     submitLabel: string;
     helper: string;
     readyHeading: string;
+    sendLabel: string;
+    sentTitle: string;
   }
 > = {
   quote: {
@@ -137,8 +142,10 @@ const modeCopy: Record<
     messageOptional: true,
     messagePlaceholder: "Tell us more about your event or any special requirements...",
     submitLabel: "Review & send request",
-    helper: "You'll be able to check your request, then send it by WhatsApp or email.",
+    helper: "You'll be able to check your request before it goes out.",
     readyHeading: "Your quote request is ready",
+    sendLabel: "Send Request",
+    sentTitle: "Quote request sent!",
   },
   general: {
     tabLabel: "General Enquiry",
@@ -149,8 +156,10 @@ const modeCopy: Record<
     messageOptional: false,
     messagePlaceholder: "Tell us what you'd like to know or ask us about...",
     submitLabel: "Review & send message",
-    helper: "You'll be able to check your message, then send it by WhatsApp or email.",
+    helper: "You'll be able to check your message before it goes out.",
     readyHeading: "Your message is ready",
+    sendLabel: "Send Message",
+    sentTitle: "Message sent!",
   },
 };
 
@@ -196,6 +205,50 @@ const emailSubject = (values: QuoteFormValues, mode: ContactIntent) =>
   mode === "general"
     ? `Enquiry from ${values.name}`
     : `Quote request: ${labelFor(toiletTypes, values.toiletType)} in ${values.eventLocation}`;
+
+/**
+ * First of two automatic senders. Calls our own serverless function (api/send-email.ts),
+ * which holds the Resend API key server-side — it's never safe to call Resend directly from
+ * the browser. Any failure (network error, function not deployed, key not configured yet)
+ * just returns false so the caller can fall back to EmailJS.
+ */
+const trySendViaResend = async (subject: string, text: string, replyTo: string) => {
+  try {
+    const response = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject, text, replyTo }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Second, client-side sender. Safe to call directly from the browser because EmailJS's
+ * "public key" is designed to be exposed (see src/lib/emailjs.ts) — unlike Resend's key.
+ */
+const trySendViaEmailJS = async (values: QuoteFormValues, mode: ContactIntent, subject: string, text: string) => {
+  if (!emailjsConfigured) return false;
+  try {
+    await emailjs.send(
+      emailjsConfig.serviceId,
+      emailjsConfig.templateId,
+      {
+        subject,
+        message: text,
+        from_name: values.name,
+        reply_to: values.email || "(not provided)",
+        mode: mode === "quote" ? "Quote Request" : "General Enquiry",
+      },
+      { publicKey: emailjsConfig.publicKey },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // On narrow screens a long address wraps at the "@" instead of in the middle of a word
 const [emailUser, emailDomain] = site.email.split("@");
@@ -290,11 +343,19 @@ type ReadyPanelProps = {
   values: QuoteFormValues;
   headingRef: RefObject<HTMLHeadingElement>;
   onEdit: () => void;
-  onSend: (channel: "whatsapp" | "email") => void;
+  sending: boolean;
+  sendFailed: boolean;
+  onSendMessage: () => void;
+  onManualSend: (channel: "whatsapp" | "email") => void;
 };
 
-/** Shown after the form validates. Nothing is sent from the browser; the visitor picks WhatsApp or email. */
-const ReadyPanel = ({ mode, values, headingRef, onEdit, onSend }: ReadyPanelProps) => {
+/**
+ * Shown after the form validates, before anything has actually gone anywhere. The primary
+ * button tries to send for real (Resend, then EmailJS as a fallback — see the two
+ * trySendVia* functions above); the WhatsApp/email links only appear if both of those fail,
+ * as a manual last resort.
+ */
+const ReadyPanel = ({ mode, values, headingRef, onEdit, sending, sendFailed, onSendMessage, onManualSend }: ReadyPanelProps) => {
   const copy = modeCopy[mode];
   const message = buildMessage(values, mode);
   const rows: [string, string][] = [
@@ -324,8 +385,7 @@ const ReadyPanel = ({ mode, values, headingRef, onEdit, onSend }: ReadyPanelProp
         {copy.readyHeading}
       </h3>
       <p className="mt-2 text-muted-foreground">
-        Nothing has been sent yet. Choose how you&rsquo;d like to send it to our team &mdash; we reply within 24
-        hours.
+        Nothing has been sent yet &mdash; check the details below, then send it to our team.
       </p>
 
       <dl className="mt-6 divide-y rounded-2xl border bg-muted/50">
@@ -337,26 +397,49 @@ const ReadyPanel = ({ mode, values, headingRef, onEdit, onSend }: ReadyPanelProp
         ))}
       </dl>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <a
-          href={whatsappLink(message)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => onSend("whatsapp")}
-          className="btn-cta px-8 py-4 text-base"
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={onSendMessage}
+          disabled={sending}
+          className="btn-cta w-full px-8 py-4 text-base disabled:pointer-events-none disabled:opacity-70 sm:w-auto"
         >
-          <MessageCircle className="h-5 w-5" aria-hidden="true" />
-          Send on WhatsApp
-        </a>
-        <a
-          href={mailtoLink(emailSubject(values, mode), message)}
-          onClick={() => onSend("email")}
-          className="btn-outline-dark px-8 py-4 text-base"
-        >
-          <Mail className="h-5 w-5" aria-hidden="true" />
-          Send by email
-        </a>
+          {sending ? "Sending…" : copy.sendLabel}
+          {sending ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Send className="h-4 w-4" aria-hidden="true" />
+          )}
+        </button>
       </div>
+
+      {sendFailed && (
+        <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm font-medium text-foreground">
+            That didn&rsquo;t go through. Try again above, or send it manually instead:
+          </p>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <a
+              href={whatsappLink(message)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onManualSend("whatsapp")}
+              className="btn-cta px-6 py-3 text-sm"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              Send on WhatsApp
+            </a>
+            <a
+              href={mailtoLink(emailSubject(values, mode), message)}
+              onClick={() => onManualSend("email")}
+              className="btn-outline-dark px-6 py-3 text-sm"
+            >
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              Send by email
+            </a>
+          </div>
+        </div>
+      )}
 
       <button
         type="button"
@@ -370,22 +453,26 @@ const ReadyPanel = ({ mode, values, headingRef, onEdit, onSend }: ReadyPanelProp
   );
 };
 
+type SentChannel = "resend" | "emailjs" | "whatsapp" | "email";
+
 type SentPanelProps = {
   mode: ContactIntent;
-  channel: "whatsapp" | "email";
+  channel: SentChannel;
   name: string;
   headingRef: RefObject<HTMLHeadingElement>;
   onReset: () => void;
 };
 
 /**
- * Shown once the visitor has clicked through to WhatsApp or email. We can't know whether
- * they actually hit send there (or whether a mail app even opened), so this confirms what
- * we do know — the link was opened — rather than claiming the message has been received.
+ * "resend"/"emailjs" mean the email API confirmed it accepted the message — a real send, so
+ * the copy says so plainly. "whatsapp"/"email" mean the visitor was handed off to an external
+ * app instead (the automatic senders weren't available); we can't know whether they actually
+ * hit send there, so that copy stays honest about what we actually know happened.
  */
 const SentPanel = ({ mode, channel, name, headingRef, onReset }: SentPanelProps) => {
   const noun = mode === "quote" ? "quote request" : "message";
   const firstName = name.trim().split(/\s+/)[0];
+  const sentDirectly = channel === "resend" || channel === "emailjs";
 
   return (
     <div>
@@ -395,15 +482,23 @@ const SentPanel = ({ mode, channel, name, headingRef, onReset }: SentPanelProps)
       <h3 ref={headingRef} tabIndex={-1} className="mt-4 text-2xl font-extrabold outline-none">
         Thanks{firstName ? `, ${firstName}` : ""}!
       </h3>
-      <p className="mt-2 max-w-md text-muted-foreground">
-        We&rsquo;ve opened {channel === "whatsapp" ? "WhatsApp" : "your email app"} with your {noun} ready to send.
-        Once you send it from there, our team will get back to you within 24 hours.
-      </p>
-      {channel === "email" && (
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Nothing open? Your device may not have an email app set up &mdash; use{" "}
-          <span className="font-medium text-foreground">Send on WhatsApp</span> instead, or call us directly.
+      {sentDirectly ? (
+        <p className="mt-2 max-w-md text-muted-foreground">
+          Your {noun} has been sent to our team. We&rsquo;ll get back to you within 24 hours.
         </p>
+      ) : (
+        <>
+          <p className="mt-2 max-w-md text-muted-foreground">
+            We&rsquo;ve opened {channel === "whatsapp" ? "WhatsApp" : "your email app"} with your {noun} ready to
+            send. Once you send it from there, our team will get back to you within 24 hours.
+          </p>
+          {channel === "email" && (
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              Nothing open? Your device may not have an email app set up &mdash; use{" "}
+              <span className="font-medium text-foreground">Send on WhatsApp</span> instead, or call us directly.
+            </p>
+          )}
+        </>
       )}
 
       <button type="button" onClick={onReset} className="btn-outline-dark mt-6 px-6 py-3 text-sm">
@@ -422,7 +517,9 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
   const { toast } = useToast();
   const [mode, setMode] = useState<ContactIntent>("quote");
   const [submitted, setSubmitted] = useState<QuoteFormValues | null>(null);
-  const [sent, setSent] = useState<"whatsapp" | "email" | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendFailed, setSendFailed] = useState(false);
+  const [sent, setSent] = useState<SentChannel | null>(null);
   const readyHeadingRef = useRef<HTMLHeadingElement>(null);
   const sentHeadingRef = useRef<HTMLHeadingElement>(null);
 
@@ -449,6 +546,7 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
       setValue("toiletType", contactRequest.toiletType, { shouldValidate: true, shouldDirty: true });
     }
     setSubmitted(null);
+    setSendFailed(false);
     setSent(null);
   }, [contactRequest, setValue]);
 
@@ -463,6 +561,7 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
     if (next === mode) return;
     setMode(next);
     setSubmitted(null);
+    setSendFailed(false);
     setSent(null);
   };
 
@@ -470,11 +569,8 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
 
   const handleValidSubmit = (values: QuoteFormValues) => {
     setSubmitted(values);
+    setSendFailed(false);
     setSent(null);
-    toast({
-      title: copy.readyHeading,
-      description: "Choose WhatsApp or email below to send it to our team.",
-    });
   };
 
   const handleInvalidSubmit = () => {
@@ -485,7 +581,39 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
     });
   };
 
-  const handleSend = (channel: "whatsapp" | "email") => {
+  // Tries Resend (our own /api/send-email) first, then EmailJS, before giving up and letting
+  // the visitor send it manually via WhatsApp or email.
+  const handleSendMessage = async () => {
+    if (!submitted) return;
+    setSending(true);
+    setSendFailed(false);
+
+    const subject = emailSubject(submitted, mode);
+    const text = buildMessage(submitted, mode);
+
+    let channel: SentChannel = "resend";
+    let ok = await trySendViaResend(subject, text, submitted.email);
+    if (!ok) {
+      channel = "emailjs";
+      ok = await trySendViaEmailJS(submitted, mode, subject, text);
+    }
+
+    setSending(false);
+
+    if (ok) {
+      setSent(channel);
+      toast({ title: copy.sentTitle, description: "Our team will get back to you within 24 hours." });
+    } else {
+      setSendFailed(true);
+      toast({
+        variant: "destructive",
+        title: "Couldn't send automatically",
+        description: "Please try WhatsApp or email below instead.",
+      });
+    }
+  };
+
+  const handleManualSend = (channel: "whatsapp" | "email") => {
     setSent(channel);
     toast({
       title: channel === "whatsapp" ? "Opening WhatsApp…" : "Opening your email app…",
@@ -496,6 +624,7 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
   const handleReset = () => {
     form.reset(defaultValues);
     setSubmitted(null);
+    setSendFailed(false);
     setSent(null);
   };
 
@@ -566,7 +695,10 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
                   values={submitted}
                   headingRef={readyHeadingRef}
                   onEdit={() => setSubmitted(null)}
-                  onSend={handleSend}
+                  sending={sending}
+                  sendFailed={sendFailed}
+                  onSendMessage={handleSendMessage}
+                  onManualSend={handleManualSend}
                 />
               ) : (
                 <>

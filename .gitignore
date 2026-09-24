@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local env vars (see .env.example) — real keys belong in your host's dashboard, not in git
+.env
+.env.*
+!.env.example
+.vercel
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
