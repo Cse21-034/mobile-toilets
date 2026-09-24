@@ -5,8 +5,9 @@ import { Resend } from "resend";
  * Server-side mail relay for the contact form. Runs as a Vercel serverless function, so
  * RESEND_API_KEY stays on the server and is never shipped to the browser — unlike a client
  * SDK's public key, Resend's key can send from any address on the account, so it must not be
- * exposed. Set RESEND_API_KEY (required), RESEND_FROM_EMAIL and CONTACT_TO_EMAIL (both
- * optional) in the Vercel project's Environment Variables — see .env.example.
+ * exposed. Set RESEND_API_KEY (required), RESEND_FROM_EMAIL, CONTACT_TO_EMAIL and
+ * CONTACT_BCC_EMAIL (all optional) in the Vercel project's Environment Variables — see
+ * .env.example.
  *
  * The frontend (ContactSection.tsx) calls this first and falls back to EmailJS if it fails.
  * On success it also best-effort sends a short auto-reply to the visitor's own email, if they
@@ -19,6 +20,9 @@ const MAX_NAME_LENGTH = 100;
 
 const DEFAULT_TO_EMAIL = "solidcaremobiletoilets661@gmail.com";
 const DEFAULT_FROM_EMAIL = "Solidcare Website <onboarding@resend.dev>";
+// BCC'd on every enquiry by default so it also lands in the Gmail inbox, whatever
+// CONTACT_TO_EMAIL is set to. Set CONTACT_BCC_EMAIL="" (empty) in Vercel to turn this off.
+const DEFAULT_BCC_EMAIL = "solidcaremobiletoilets661@gmail.com";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -67,12 +71,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+  const toEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL;
+  // process.env.CONTACT_BCC_EMAIL !== undefined lets Vercel's env var explicitly disable this
+  // (set to "") without falling back to the default the way `||` would.
+  const bccEmail = process.env.CONTACT_BCC_EMAIL !== undefined ? process.env.CONTACT_BCC_EMAIL : DEFAULT_BCC_EMAIL;
+  const shouldBcc = bccEmail && bccEmail.toLowerCase() !== toEmail.toLowerCase();
   const resend = new Resend(apiKey);
 
   try {
     const { error } = await resend.emails.send({
       from: fromEmail,
-      to: process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL,
+      to: toEmail,
+      ...(shouldBcc && { bcc: bccEmail }),
       subject,
       text,
       ...(replyTo && { replyTo }),
