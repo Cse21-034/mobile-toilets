@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useActiveSection } from "@/hooks/use-active-section";
+import { useCopyContact } from "@/hooks/use-copy-contact";
 import { site, type ContactIntent } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ const Header = ({ onNavigateContact }: HeaderProps) => {
   const [scrolled, setScrolled] = useState(false);
   const active = useActiveSection(sectionIds);
   const phone = site.phones[0];
+  const copyContact = useCopyContact();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -100,6 +102,7 @@ const Header = ({ onNavigateContact }: HeaderProps) => {
         <div className="hidden items-center gap-3 lg:flex">
           <a
             href={`tel:${phone.tel}`}
+            onClick={copyContact(phone.display, "phone")}
             className="focus-ring flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-primary transition-colors hover:text-primary/75"
           >
             <Phone className="h-4 w-4" aria-hidden="true" />

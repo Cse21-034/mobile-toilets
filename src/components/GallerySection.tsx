@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Maximize2 } from "lucide-react";
+import { useRef, useState, type KeyboardEvent, type TouchEvent } from "react";
+import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
@@ -43,8 +43,43 @@ const galleryPhotos: GalleryPhoto[] = [
   },
 ];
 
+const SWIPE_THRESHOLD_PX = 50;
+
 const GallerySection = () => {
-  const [selected, setSelected] = useState<GalleryPhoto | null>(null);
+  // Index of the photo open in the viewer, or null when it's closed
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const selected = selectedIndex === null ? null : galleryPhotos[selectedIndex];
+  const touchStartX = useRef<number | null>(null);
+
+  // Wraps around, so "next" on the last photo goes back to the first
+  const step = (delta: number) =>
+    setSelectedIndex((index) =>
+      index === null ? null : (index + delta + galleryPhotos.length) % galleryPhotos.length,
+    );
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      step(1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      step(-1);
+    }
+  };
+
+  const handleTouchStart = (event: TouchEvent) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (event: TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const deltaX = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(deltaX) >= SWIPE_THRESHOLD_PX) step(deltaX < 0 ? 1 : -1);
+  };
+
+  const navButtonClass =
+    "focus-ring absolute top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white shadow-soft backdrop-blur transition-colors hover:bg-black/75";
 
   return (
     <section id="gallery" className="section-padding bg-background">
@@ -60,7 +95,7 @@ const GallerySection = () => {
             <Reveal key={photo.src} delay={index * 80} className={cn("h-full", photo.className)}>
               <button
                 type="button"
-                onClick={() => setSelected(photo)}
+                onClick={() => setSelectedIndex(index)}
                 aria-haspopup="dialog"
                 className="focus-ring group relative block h-full w-full overflow-hidden rounded-2xl bg-muted text-left shadow-card"
               >
@@ -88,21 +123,35 @@ const GallerySection = () => {
         </div>
       </div>
 
-      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-4xl gap-0 overflow-hidden p-0 sm:rounded-2xl">
-          {selected && (
+      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelectedIndex(null)}>
+        <DialogContent className="max-w-4xl gap-0 overflow-hidden p-0 sm:rounded-2xl" onKeyDown={handleKeyDown}>
+          {selected && selectedIndex !== null && (
             <>
-              <div className="border-b px-5 py-4 pr-14">
+              <div className="flex items-baseline gap-3 border-b px-5 py-4 pr-14">
                 <DialogTitle className="text-base font-semibold leading-snug">{selected.caption}</DialogTitle>
-                <DialogDescription className="sr-only">Enlarged photo of the Solidcare fleet</DialogDescription>
+                <span className="ml-auto shrink-0 text-sm tabular-nums text-muted-foreground" aria-live="polite">
+                  {selectedIndex + 1} / {galleryPhotos.length}
+                </span>
+                <DialogDescription className="sr-only">
+                  Enlarged photo of the Solidcare fleet. Use the left and right arrow keys to see other photos.
+                </DialogDescription>
               </div>
-              <img
-                src={selected.src}
-                alt={selected.caption}
-                width={selected.width}
-                height={selected.height}
-                className="max-h-[75vh] w-full bg-muted object-contain"
-              />
+              <div className="relative bg-muted" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+                <img
+                  key={selected.src}
+                  src={selected.src}
+                  alt={selected.caption}
+                  width={selected.width}
+                  height={selected.height}
+                  className="max-h-[75vh] w-full object-contain animate-in fade-in-0 duration-300"
+                />
+                <button type="button" onClick={() => step(-1)} className={cn(navButtonClass, "left-3")} aria-label="Previous photo">
+                  <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => step(1)} className={cn(navButtonClass, "right-3")} aria-label="Next photo">
+                  <ChevronRight className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
             </>
           )}
         </DialogContent>

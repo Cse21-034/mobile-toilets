@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useCopyContact } from "@/hooks/use-copy-contact";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
 import { emailjsConfig, emailjsConfigured } from "@/lib/emailjs";
@@ -446,6 +447,7 @@ type ContactSectionProps = {
 
 const ContactSection = ({ contactRequest }: ContactSectionProps) => {
   const { toast } = useToast();
+  const copyContact = useCopyContact();
   const [mode, setMode] = useState<ContactIntent>("quote");
   const [sending, setSending] = useState(false);
   const [outcome, setOutcome] = useState<SendOutcome | null>(null);
@@ -545,7 +547,12 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
               <ul className="mt-8 space-y-6">
                 <ContactRow icon={Phone} label="Call us">
                   {site.phones.map((phone) => (
-                    <a key={phone.tel} href={`tel:${phone.tel}`} className={`${contactLinkClass} flex`}>
+                    <a
+                      key={phone.tel}
+                      href={`tel:${phone.tel}`}
+                      onClick={copyContact(phone.display, "phone")}
+                      className={`${contactLinkClass} flex`}
+                    >
                       {phone.display}
                     </a>
                   ))}
@@ -568,6 +575,7 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
                         <span className="block text-xs font-medium text-white/60">{label}</span>
                         <a
                           href={`mailto:${address}`}
+                          onClick={copyContact(address, "email")}
                           className={`${contactLinkClass} inline-flex break-words text-sm sm:text-base`}
                         >
                           {/* On narrow screens the address wraps at the "@" instead of mid-word */}

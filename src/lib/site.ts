@@ -17,7 +17,7 @@ export const site = {
     { label: "General enquiries", address: "info@solidcaremobiletoilets.com" },
   ],
   hours: [
-    { days: "Mon – Fri", time: "7:00 AM – 6:00 PM" },
+    { days: "Mon – Fri", time: "8:00 AM – 5:00 PM" },
     { days: "Sat", time: "8:00 AM – 2:00 PM" },
   ],
   coverage: "Serving all areas nationwide",

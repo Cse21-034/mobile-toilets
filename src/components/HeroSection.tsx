@@ -1,4 +1,5 @@
 import { ArrowRight, BadgeCheck, Clock, Phone, Sparkles } from "lucide-react";
+import { useCopyContact } from "@/hooks/use-copy-contact";
 import { photos } from "@/lib/photos";
 import { site, type ContactIntent } from "@/lib/site";
 
@@ -14,6 +15,7 @@ type HeroSectionProps = {
 
 const HeroSection = ({ onNavigateContact }: HeroSectionProps) => {
   const phone = site.phones[0];
+  const copyContact = useCopyContact();
 
   return (
     <section
@@ -60,7 +62,11 @@ const HeroSection = ({ onNavigateContact }: HeroSectionProps) => {
               Request a Quote
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </a>
-            <a href={`tel:${phone.tel}`} className="btn-outline-light px-8 py-4 text-base">
+            <a
+              href={`tel:${phone.tel}`}
+              onClick={copyContact(phone.display, "phone")}
+              className="btn-outline-light px-8 py-4 text-base"
+            >
               <Phone className="h-5 w-5" aria-hidden="true" />
               Call {phone.display}
             </a>

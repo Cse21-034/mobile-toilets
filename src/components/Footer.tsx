@@ -1,5 +1,6 @@
 import { ArrowUp, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import Logo from "@/components/Logo";
+import { useCopyContact } from "@/hooks/use-copy-contact";
 import { site, whatsappLink, type ContactIntent } from "@/lib/site";
 import { socialLinks } from "@/lib/social";
 
@@ -29,6 +30,7 @@ type FooterProps = {
 
 const Footer = ({ onNavigateContact }: FooterProps) => {
   const currentYear = new Date().getFullYear();
+  const copyContact = useCopyContact();
 
   return (
     <footer className="on-dark bg-[hsl(190_45%_7%)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-white lg:pb-0">
@@ -92,7 +94,7 @@ const Footer = ({ onNavigateContact }: FooterProps) => {
               {site.phones.map((phone) => (
                 <li key={phone.tel} className="flex items-center gap-3">
                   <Phone className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
-                  <a href={`tel:${phone.tel}`} className={linkClass}>
+                  <a href={`tel:${phone.tel}`} onClick={copyContact(phone.display, "phone")} className={linkClass}>
                     {phone.display}
                   </a>
                 </li>
@@ -106,7 +108,7 @@ const Footer = ({ onNavigateContact }: FooterProps) => {
               {site.emails.map(({ address }) => (
                 <li key={address} className="flex items-center gap-3">
                   <Mail className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
-                  <a href={`mailto:${address}`} className={`${linkClass} break-all`}>
+                  <a href={`mailto:${address}`} onClick={copyContact(address, "email")} className={`${linkClass} break-all`}>
                     {address}
                   </a>
                 </li>
