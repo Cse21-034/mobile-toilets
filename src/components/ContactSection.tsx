@@ -267,9 +267,6 @@ const trySendViaEmailJS = async (values: QuoteFormValues, mode: ContactIntent, s
   }
 };
 
-// On narrow screens a long address wraps at the "@" instead of in the middle of a word
-const [emailUser, emailDomain] = site.email.split("@");
-
 const invalidBorder = "aria-[invalid=true]:border-destructive";
 
 const selectClass = `h-11 w-full appearance-none rounded-md border border-input bg-background px-3 pr-10 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm ${invalidBorder}`;
@@ -564,15 +561,24 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
                   </a>
                 </ContactRow>
                 <ContactRow icon={Mail} label="Email">
-                  <a
-                    href={`mailto:${site.email}`}
-                    className={`${contactLinkClass} inline-flex break-words text-sm sm:text-base`}
-                  >
-                    <span>
-                      {emailUser}
-                      <wbr />@{emailDomain}
-                    </span>
-                  </a>
+                  {site.emails.map(({ label, address }) => {
+                    const [user, domain] = address.split("@");
+                    return (
+                      <div key={address} className="[&+&]:mt-2">
+                        <span className="block text-xs font-medium text-white/60">{label}</span>
+                        <a
+                          href={`mailto:${address}`}
+                          className={`${contactLinkClass} inline-flex break-words text-sm sm:text-base`}
+                        >
+                          {/* On narrow screens the address wraps at the "@" instead of mid-word */}
+                          <span>
+                            {user}
+                            <wbr />@{domain}
+                          </span>
+                        </a>
+                      </div>
+                    );
+                  })}
                 </ContactRow>
                 <ContactRow icon={Clock} label="Office hours">
                   {site.hours.map((entry) => (

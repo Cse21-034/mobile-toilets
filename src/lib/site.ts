@@ -10,7 +10,12 @@ export const site = {
   ],
   /** International format, digits only, as required by wa.me links */
   whatsapp: "26773106254",
-  email: "solidcaremobiletoilets661@gmail.com",
+  email: "bookings@solidcaremobiletoilets.com",
+  /** Shown on the site. Both forward to the business Gmail via api/inbound-email.ts. */
+  emails: [
+    { label: "Bookings", address: "bookings@solidcaremobiletoilets.com" },
+    { label: "General enquiries", address: "info@solidcaremobiletoilets.com" },
+  ],
   hours: [
     { days: "Mon – Fri", time: "7:00 AM – 6:00 PM" },
     { days: "Sat", time: "8:00 AM – 2:00 PM" },

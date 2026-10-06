@@ -103,12 +103,14 @@ const Footer = ({ onNavigateContact }: FooterProps) => {
                   Chat on WhatsApp
                 </a>
               </li>
-              <li className="flex items-center gap-3">
-                <Mail className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
-                <a href={`mailto:${site.email}`} className={`${linkClass} break-all`}>
-                  {site.email}
-                </a>
-              </li>
+              {site.emails.map(({ address }) => (
+                <li key={address} className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
+                  <a href={`mailto:${address}`} className={`${linkClass} break-all`}>
+                    {address}
+                  </a>
+                </li>
+              ))}
               <li className="flex items-start gap-3 text-sm text-white/70">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-cta" aria-hidden="true" />
                 <span>{site.coverage}</span>
