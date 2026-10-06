@@ -11,7 +11,7 @@ export const site = {
   /** International format, digits only, as required by wa.me links */
   whatsapp: "26773106254",
   email: "bookings@solidcaremobiletoilets.com",
-  /** Shown on the site. Both forward to the business Gmail via api/inbound-email.ts. */
+  /** Shown on the site. Real mailboxes (Zoho); the contact form routes quotes to bookings@, enquiries to info@. */
   emails: [
     { label: "Bookings", address: "bookings@solidcaremobiletoilets.com" },
     { label: "General enquiries", address: "info@solidcaremobiletoilets.com" },

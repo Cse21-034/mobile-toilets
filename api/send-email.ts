@@ -5,9 +5,12 @@ import { Resend } from "resend";
  * Server-side mail relay for the contact form. Runs as a Vercel serverless function, so
  * RESEND_API_KEY stays on the server and is never shipped to the browser — unlike a client
  * SDK's public key, Resend's key can send from any address on the account, so it must not be
- * exposed. Set RESEND_API_KEY (required), RESEND_FROM_EMAIL, CONTACT_TO_EMAIL,
- * CONTACT_INFO_EMAIL and CONTACT_BCC_EMAIL (all optional) in the Vercel project's Environment
- * Variables — see .env.example.
+ * exposed. RESEND_API_KEY is required; the address overrides below are optional — see
+ * .env.example.
+ *
+ * Quote requests go to the bookings@ mailbox and general enquiries to info@ (both hosted on
+ * Zoho; Resend only sends). Each is sent from, and replied to via, its own inbox, so a customer
+ * who replies to the auto-reply lands in the same mailbox the team answers from.
  *
  * The frontend (ContactSection.tsx) calls this first and falls back to EmailJS if it fails.
  * On success it also best-effort sends a short auto-reply to the visitor's own email, if they
@@ -18,11 +21,20 @@ const MAX_SUBJECT_LENGTH = 200;
 const MAX_TEXT_LENGTH = 5000;
 const MAX_NAME_LENGTH = 100;
 
-const DEFAULT_TO_EMAIL = "solidcaremobiletoilets661@gmail.com";
-const DEFAULT_FROM_EMAIL = "Solidcare Website <onboarding@resend.dev>";
-// BCC'd on every enquiry by default so it also lands in the Gmail inbox, whatever
-// CONTACT_TO_EMAIL is set to. Set CONTACT_BCC_EMAIL="" (empty) in Vercel to turn this off.
-const DEFAULT_BCC_EMAIL = "solidcaremobiletoilets661@gmail.com";
+const BOOKINGS_EMAIL = "bookings@solidcaremobiletoilets.com";
+const INFO_EMAIL = "info@solidcaremobiletoilets.com";
+
+/** Per form mode: which inbox receives it, and the sender name/address used for it. */
+const routeFor = (mode: "quote" | "general") =>
+  mode === "general"
+    ? {
+        to: process.env.CONTACT_INFO_EMAIL || INFO_EMAIL,
+        from: process.env.RESEND_INFO_FROM_EMAIL || `Solidcare Mobile Toilets <${INFO_EMAIL}>`,
+      }
+    : {
+        to: process.env.CONTACT_TO_EMAIL || BOOKINGS_EMAIL,
+        from: process.env.RESEND_FROM_EMAIL || `Solidcare Bookings <${BOOKINGS_EMAIL}>`,
+      };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,22 +82,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Message too long" });
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
-  // Quote requests go to CONTACT_TO_EMAIL (bookings@); general enquiries go to
-  // CONTACT_INFO_EMAIL (info@) when it's set, otherwise to the same bookings address.
-  const quoteToEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL;
-  const toEmail = mode === "general" ? process.env.CONTACT_INFO_EMAIL || quoteToEmail : quoteToEmail;
-  // process.env.CONTACT_BCC_EMAIL !== undefined lets Vercel's env var explicitly disable this
-  // (set to "") without falling back to the default the way `||` would.
-  const bccEmail = process.env.CONTACT_BCC_EMAIL !== undefined ? process.env.CONTACT_BCC_EMAIL : DEFAULT_BCC_EMAIL;
-  const shouldBcc = bccEmail && bccEmail.toLowerCase() !== toEmail.toLowerCase();
+  const { to: toEmail, from: fromEmail } = routeFor(mode);
   const resend = new Resend(apiKey);
 
   try {
     const { error } = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
-      ...(shouldBcc && { bcc: bccEmail }),
       subject,
       text,
       ...(replyTo && { replyTo }),
@@ -106,6 +109,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { error } = await resend.emails.send({
         from: fromEmail,
         to: visitorEmail,
+        // If the customer replies to the auto-reply, it reaches the inbox handling their request.
+        replyTo: toEmail,
         subject: "We've received your message — Solidcare Mobile Toilets",
         text: autoReplyText(visitorName || "there", mode),
       });
