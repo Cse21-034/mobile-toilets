@@ -12,12 +12,13 @@ const services: {
   description: string;
 }[] = [
   {
-    photo: photos.fleetTrailer,
+    photo: photos.truckTowSide,
     title: "Fast Delivery",
     description: "Quick and efficient delivery to your location anywhere in the region.",
   },
   {
-    photo: photos.interiorSink,
+    photo: photos.sinkCloseup,
+    position: "65% 50%",
     title: "Hygienic & Clean",
     description: "All units are thoroughly sanitized and maintained to the highest standards.",
   },
@@ -33,14 +34,12 @@ const services: {
     description: "Scheduled maintenance and cleaning throughout your rental period.",
   },
   {
-    photo: photos.fleetRow,
-    zoom: { scale: 1.5, origin: "78% 58%" },
+    photo: photos.trailerEvent,
     title: "Event Specialists",
     description: "Experienced in handling large events, festivals, and construction sites.",
   },
   {
-    photo: photos.interiorSink,
-    zoom: { scale: 1.9, origin: "55% 58%" },
+    photo: photos.trailerGrassSmall,
     title: "Eco-Friendly",
     description: "Environmentally responsible waste management and disposal practices.",
   },

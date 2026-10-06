@@ -15,8 +15,7 @@ const quickLinks = [
 const serviceList = [
   "Event Toilet Hire",
   "Construction Site Units",
-  "VIP Toilet Trailers",
-  "Accessible Toilets",
+  "VIP & VVIP Toilet Trailers",
   "Regular Servicing",
 ];
 

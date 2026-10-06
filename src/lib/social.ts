@@ -1,6 +1,8 @@
 import { Facebook, Instagram, X, Youtube, type LucideIcon } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import TikTokIcon from "@/components/icons/TikTokIcon";
+import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
+import { whatsappLink } from "@/lib/site";
 
 export type SocialLink = {
   name: string;
@@ -15,6 +17,12 @@ export type SocialLink = {
  * its platform's own brand colour, so the row reads as one set at rest.
  */
 export const socialLinks: SocialLink[] = [
+  {
+    name: "WhatsApp",
+    href: whatsappLink(),
+    Icon: WhatsAppIcon,
+    hoverClass: "hover:bg-[#25D366] hover:text-white",
+  },
   {
     name: "Facebook",
     href: "https://www.facebook.com/solidcaremobileT",

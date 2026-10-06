@@ -6,7 +6,7 @@ const steps = [
   {
     title: "Request a quote",
     description:
-      "Tell us your event date, location, rental period and how many units you need. We'll send a customised quote within 24 hours.",
+      "Tell us your delivery and collection dates, location and how many units you need. We'll send a customised quote within 24 hours.",
   },
   {
     title: "We deliver & set up",
@@ -33,7 +33,7 @@ const HowItWorks = ({ onNavigateContact }: HowItWorksProps) => {
           tone="dark"
           eyebrow="Simple Process"
           title="How it works"
-          description="From your first message to the last collection, we keep hiring a mobile toilet straightforward."
+          description="From your first message to the final collection, we take care of everything for you."
         />
 
         <ol className="relative grid gap-6 md:grid-cols-3 lg:gap-8">

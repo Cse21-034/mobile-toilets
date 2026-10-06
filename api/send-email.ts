@@ -5,9 +5,9 @@ import { Resend } from "resend";
  * Server-side mail relay for the contact form. Runs as a Vercel serverless function, so
  * RESEND_API_KEY stays on the server and is never shipped to the browser — unlike a client
  * SDK's public key, Resend's key can send from any address on the account, so it must not be
- * exposed. Set RESEND_API_KEY (required), RESEND_FROM_EMAIL, CONTACT_TO_EMAIL and
- * CONTACT_BCC_EMAIL (all optional) in the Vercel project's Environment Variables — see
- * .env.example.
+ * exposed. Set RESEND_API_KEY (required), RESEND_FROM_EMAIL, CONTACT_TO_EMAIL,
+ * CONTACT_INFO_EMAIL and CONTACT_BCC_EMAIL (all optional) in the Vercel project's Environment
+ * Variables — see .env.example.
  *
  * The frontend (ContactSection.tsx) calls this first and falls back to EmailJS if it fails.
  * On success it also best-effort sends a short auto-reply to the visitor's own email, if they
@@ -71,7 +71,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
-  const toEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL;
+  // Quote requests go to CONTACT_TO_EMAIL (bookings@); general enquiries go to
+  // CONTACT_INFO_EMAIL (info@) when it's set, otherwise to the same bookings address.
+  const quoteToEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL;
+  const toEmail = mode === "general" ? process.env.CONTACT_INFO_EMAIL || quoteToEmail : quoteToEmail;
   // process.env.CONTACT_BCC_EMAIL !== undefined lets Vercel's env var explicitly disable this
   // (set to "") without falling back to the default the way `||` would.
   const bccEmail = process.env.CONTACT_BCC_EMAIL !== undefined ? process.env.CONTACT_BCC_EMAIL : DEFAULT_BCC_EMAIL;

@@ -19,23 +19,19 @@ export const site = {
 } as const;
 
 export const toiletTypes = [
-  { value: "standard", label: "Standard Portable" },
-  { value: "vip", label: "VIP Luxury Trailer" },
-  { value: "accessible", label: "Accessible Unit" },
-  { value: "mixed", label: "Mixed (Multiple Types)" },
+  { value: "vip", label: "VIP" },
+  { value: "vvip", label: "VVIP" },
 ] as const;
 
 export type ToiletType = (typeof toiletTypes)[number]["value"];
 
-export const durations = [
-  { value: "1-day", label: "1 Day" },
-  { value: "2-3-days", label: "2-3 Days" },
-  { value: "1-week", label: "1 Week" },
-  { value: "2-weeks", label: "2 Weeks" },
-  { value: "1-month", label: "1 Month" },
-  { value: "3-months", label: "3 Months" },
-  { value: "6-months", label: "6+ Months" },
-] as const;
+export const MAX_RENTAL_DAYS = 30;
+
+/** "1 day", "2 days" … "30 days", each listed separately. */
+export const durations = Array.from({ length: MAX_RENTAL_DAYS }, (_, i) => ({
+  value: String(i + 1),
+  label: i === 0 ? "1 day" : `${i + 1} days`,
+}));
 
 /** Whether the contact section should ask for event details ("quote") or just a message ("general"). */
 export type ContactIntent = "quote" | "general";

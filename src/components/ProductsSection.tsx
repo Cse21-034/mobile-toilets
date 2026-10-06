@@ -17,30 +17,20 @@ const products: {
   badge?: string;
 }[] = [
   {
-    type: "standard",
-    name: "Standard Portable Toilet",
-    photo: photos.fleetRow,
-    description: "Our most popular option for construction sites and outdoor events.",
-    features: ["Durable construction", "Non-slip flooring", "Ventilation system", "Hand sanitizer dispenser"],
-    ideal: "Construction sites, small events",
-    badge: "Most popular",
-  },
-  {
     type: "vip",
-    name: "VIP Luxury Toilet Trailer",
-    photo: photos.fleetTrailer,
+    name: "VIP Toilet Trailer",
+    photo: photos.trailerOpen,
     description: "Premium mobile restroom with upscale amenities for special occasions.",
     features: ["Flushing toilet", "Running water sink", "Mirror & lighting", "Climate control available"],
-    ideal: "Weddings, corporate events, VIP areas",
+    ideal: "Weddings, corporate events, functions",
   },
   {
-    type: "accessible",
-    name: "Accessible Toilet Unit",
-    photo: photos.interiorToilet,
-    position: "50% 78%",
-    description: "Spacious wheelchair-accessible unit meeting disability access requirements.",
-    features: ["Wide doorway access", "Interior grab rails", "Lowered fixtures", "Extra interior space"],
-    ideal: "Public events, inclusive facilities",
+    type: "vvip",
+    name: "VVIP Toilet Trailer",
+    photo: photos.trailerPark,
+    description: "Our top-tier toilet trailer for high-profile guests and premium occasions.",
+    features: ["Separate ladies & gents cubicles", "Flushing toilet", "Running water sink", "Ask us about premium extras"],
+    ideal: "High-profile guests, weddings, VIP areas",
   },
 ];
 
@@ -56,10 +46,10 @@ const ProductsSection = ({ onRequestQuote }: ProductsSectionProps) => {
         <SectionHeader
           eyebrow="Our Fleet"
           title="Mobile Toilet Options"
-          description="Choose from our range of high-quality portable toilets to meet your specific needs and budget requirements."
+          description="Choose from our VIP and VVIP toilet trailers to meet your specific needs and budget requirements."
         />
 
-        <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
+        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2 lg:gap-8">
           {products.map((product, index) => (
             <Reveal key={product.type} delay={index * 90} className="h-full">
               <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-elevated">

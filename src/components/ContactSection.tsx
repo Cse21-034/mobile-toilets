@@ -12,7 +12,15 @@ import { useToast } from "@/hooks/use-toast";
 import Reveal from "@/components/Reveal";
 import SectionHeader from "@/components/SectionHeader";
 import { emailjsConfig, emailjsConfigured } from "@/lib/emailjs";
-import { durations, site, toiletTypes, whatsappLink, type ContactIntent, type ContactRequest } from "@/lib/site";
+import {
+  durations,
+  MAX_RENTAL_DAYS,
+  site,
+  toiletTypes,
+  whatsappLink,
+  type ContactIntent,
+  type ContactRequest,
+} from "@/lib/site";
 
 const todayISO = () => {
   const now = new Date();
@@ -32,36 +40,55 @@ const optionalEmail = z
   .string()
   .trim()
   .refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "Enter a valid email address");
+// For visitors booking on behalf of a company — never required.
+const optionalCompanyName = z.string().trim().max(120, "Please keep this under 120 characters");
+const optionalAddress = z.string().trim().max(200, "Please keep this under 200 characters");
 
 /** Full quote request: name/phone/email plus every event detail we need to price it. */
-const quoteSchema = z.object({
-  name: requiredName,
-  phone: requiredPhone,
-  email: optionalEmail,
-  eventLocation: z.string().trim().min(2, "Tell us where the units should be delivered"),
-  eventDate: z
-    .string()
-    .min(1, "Choose a start date")
-    .refine((value) => value >= todayISO(), "The start date can't be in the past"),
-  duration: z.string().min(1, "Choose a rental duration"),
-  toiletType: z.string().min(1, "Choose a toilet type"),
-  quantity: z
-    .string()
-    .trim()
-    .min(1, "Enter how many units you need")
-    .regex(/^\d+$/, "Enter a whole number")
-    .refine((value) => Number(value) >= 1, "At least 1 unit")
-    .refine((value) => Number(value) <= 500, "For more than 500 units, please call us"),
-  message: z.string().trim().max(1000, "Please keep this under 1000 characters"),
-});
+const quoteSchema = z
+  .object({
+    name: requiredName,
+    phone: requiredPhone,
+    email: optionalEmail,
+    companyName: optionalCompanyName,
+    address: optionalAddress,
+    eventLocation: z.string().trim().min(2, "Tell us where the units should be delivered"),
+    deliveryDate: z
+      .string()
+      .min(1, "Choose a delivery date")
+      .refine((value) => value >= todayISO(), "The delivery date can't be in the past"),
+    collectionDate: z.string().min(1, "Choose a collection date"),
+    duration: z.string().min(1, "Choose how many days you need"),
+    toiletType: z.string().min(1, "Choose a toilet type"),
+    quantity: z
+      .string()
+      .trim()
+      .min(1, "Enter how many units you need")
+      .regex(/^\d+$/, "Enter a whole number")
+      .refine((value) => Number(value) >= 1, "At least 1 unit")
+      .refine((value) => Number(value) <= 500, "For more than 500 units, please call us"),
+    message: z.string().trim().max(1000, "Please keep this under 1000 characters"),
+  })
+  .superRefine((values, ctx) => {
+    if (values.deliveryDate && values.collectionDate && values.collectionDate < values.deliveryDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["collectionDate"],
+        message: "Collection can't be before delivery",
+      });
+    }
+  });
 
 /** General enquiry: just enough to reply, plus a required message since there's no event to go on. */
 const generalSchema = z.object({
   name: requiredName,
   phone: requiredPhone,
   email: optionalEmail,
+  companyName: optionalCompanyName,
+  address: optionalAddress,
   eventLocation: z.string(),
-  eventDate: z.string(),
+  deliveryDate: z.string(),
+  collectionDate: z.string(),
   duration: z.string(),
   toiletType: z.string(),
   quantity: z.string(),
@@ -78,13 +105,20 @@ const defaultValues: QuoteFormValues = {
   name: "",
   phone: "",
   email: "",
+  companyName: "",
+  address: "",
   eventLocation: "",
-  eventDate: "",
+  deliveryDate: "",
+  collectionDate: "",
   duration: "",
   toiletType: "",
   quantity: "",
   message: "",
 };
+
+/** Inclusive day count between two YYYY-MM-DD dates, e.g. same day = 1 day. */
+const daysBetween = (from: string, to: string) =>
+  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
 
 // Copy that changes depending on whether the visitor wants a quote or is just getting in touch.
 const modeCopy: Record<
@@ -106,7 +140,7 @@ const modeCopy: Record<
   quote: {
     tabLabel: "Request a Quote",
     eyebrow: "Get In Touch",
-    title: "Request a Quotation",
+    title: "Request Quotation",
     description:
       "Fill out the form below with your event details and we'll get back to you with a customised quote within 24 hours.",
     messageLabel: "Additional details",
@@ -146,6 +180,8 @@ const buildMessage = (values: QuoteFormValues, mode: ContactIntent) => {
       `Name: ${values.name}`,
       `Phone: ${values.phone}`,
       values.email ? `Email: ${values.email}` : null,
+      values.companyName ? `Company: ${values.companyName}` : null,
+      values.address ? `Address: ${values.address}` : null,
       "",
       values.message,
     ]
@@ -159,9 +195,12 @@ const buildMessage = (values: QuoteFormValues, mode: ContactIntent) => {
     `Name: ${values.name}`,
     `Phone: ${values.phone}`,
     values.email ? `Email: ${values.email}` : null,
+    values.companyName ? `Company: ${values.companyName}` : null,
+    values.address ? `Address: ${values.address}` : null,
     `Event location: ${values.eventLocation}`,
-    `Start date: ${formatDate(values.eventDate)}`,
-    `Rental duration: ${labelFor(durations, values.duration)}`,
+    `Delivery date: ${formatDate(values.deliveryDate)}`,
+    `Collection date: ${formatDate(values.collectionDate)}`,
+    `Days needed: ${labelFor(durations, values.duration)}`,
     `Toilet type: ${labelFor(toiletTypes, values.toiletType)}`,
     `Quantity: ${values.quantity}`,
     values.message ? `Notes: ${values.message}` : null,
@@ -240,7 +279,16 @@ const contactLinkClass = "focus-ring min-h-10 items-center rounded transition-co
 
 type TextFieldProps = {
   form: UseFormReturn<QuoteFormValues>;
-  name: "name" | "phone" | "email" | "eventLocation" | "eventDate" | "quantity";
+  name:
+    | "name"
+    | "phone"
+    | "email"
+    | "companyName"
+    | "address"
+    | "eventLocation"
+    | "deliveryDate"
+    | "collectionDate"
+    | "quantity";
   label: string;
   optional?: boolean;
   description?: string;
@@ -421,6 +469,17 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
   });
   const { setValue } = form;
 
+  // Picking both dates pre-fills "Days needed" (still editable), so the three stay consistent.
+  const deliveryDate = form.watch("deliveryDate");
+  const collectionDate = form.watch("collectionDate");
+  useEffect(() => {
+    if (!deliveryDate || !collectionDate) return;
+    const days = daysBetween(deliveryDate, collectionDate);
+    if (days >= 1 && days <= MAX_RENTAL_DAYS) {
+      setValue("duration", String(days), { shouldValidate: form.formState.isSubmitted, shouldDirty: true });
+    }
+  }, [deliveryDate, collectionDate, setValue, form.formState.isSubmitted]);
+
   useEffect(() => {
     if (!contactRequest) return;
     setMode(contactRequest.intent);
@@ -580,6 +639,22 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
                             type="email"
                             autoComplete="email"
                             placeholder="john@example.com"
+                          />
+                          <TextField
+                            form={form}
+                            name="companyName"
+                            label="Company name"
+                            optional
+                            autoComplete="organization"
+                            placeholder="If booking for a company"
+                          />
+                          <TextField
+                            form={form}
+                            name="address"
+                            label="Address"
+                            optional
+                            autoComplete="street-address"
+                            placeholder="Your or your company's address"
                             className="sm:col-span-2"
                           />
                         </div>
@@ -603,16 +678,23 @@ const ContactSection = ({ contactRequest }: ContactSectionProps) => {
                             />
                             <TextField
                               form={form}
-                              name="eventDate"
-                              label="Event / start date"
+                              name="deliveryDate"
+                              label="Delivery date"
                               type="date"
                               min={todayISO()}
+                            />
+                            <TextField
+                              form={form}
+                              name="collectionDate"
+                              label="Collection date"
+                              type="date"
+                              min={deliveryDate || todayISO()}
                             />
                             <SelectField
                               form={form}
                               name="duration"
-                              label="Rental duration"
-                              placeholder="Select duration"
+                              label="Days needed"
+                              placeholder="Select days"
                               options={durations}
                             />
                             <SelectField

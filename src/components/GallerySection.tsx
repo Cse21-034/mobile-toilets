@@ -14,22 +14,32 @@ type GalleryPhoto = Photo & {
 
 const galleryPhotos: GalleryPhoto[] = [
   {
-    ...photos.fleetTrailer,
-    caption: "VIP trailer with separate ladies & gents doors",
+    ...photos.trailerOpen,
+    caption: "Trailer set up with separate ladies & gents doors",
     className: "sm:col-span-2 md:row-span-2",
+  },
+  {
+    ...photos.truckTowSide,
+    caption: "On the road to your site",
+    className: "md:col-span-2",
+  },
+  {
+    ...photos.sinkCloseup,
+    caption: "Hand basin with running water",
+  },
+  {
+    ...photos.interiorToilet,
+    caption: "Flush toilet interior with natural light",
+  },
+  {
+    ...photos.trailerEvent,
+    caption: "Ready for an outdoor event",
+    className: "md:col-span-2",
   },
   {
     ...photos.fleetRow,
     caption: "Trailer units on site",
     className: "md:col-span-2",
-  },
-  {
-    ...photos.interiorSink,
-    caption: "Interior with hand basin and soap dispenser",
-  },
-  {
-    ...photos.interiorToilet,
-    caption: "Flush toilet interior with natural light",
   },
 ];
 
