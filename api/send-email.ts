@@ -29,11 +29,11 @@ const routeFor = (mode: "quote" | "general") =>
   mode === "general"
     ? {
         to: process.env.CONTACT_INFO_EMAIL || INFO_EMAIL,
-        from: process.env.RESEND_INFO_FROM_EMAIL || `Solidcare Mobile Toilets <${INFO_EMAIL}>`,
+        from: process.env.RESEND_INFO_FROM_EMAIL || `Solidcare Mobile Toilets Enquiries <${INFO_EMAIL}>`,
       }
     : {
         to: process.env.CONTACT_TO_EMAIL || BOOKINGS_EMAIL,
-        from: process.env.RESEND_FROM_EMAIL || `Solidcare Bookings <${BOOKINGS_EMAIL}>`,
+        from: process.env.RESEND_FROM_EMAIL || `Solidcare Mobile Toilets Bookings <${BOOKINGS_EMAIL}>`,
       };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
